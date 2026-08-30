@@ -7,3 +7,5 @@ node_modules
 .env
 .shopify
 .react-router
+.env.seed
+tsconfig.tsbuildinfo
