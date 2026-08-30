@@ -1,4 +1,5 @@
-import {redirect, useLoaderData} from 'react-router';
+import {Await, data, redirect, useLoaderData} from 'react-router';
+import {Suspense} from 'react';
 import type {Route} from './+types/products.$handle';
 import {
   getSelectedProductOptions,
@@ -11,11 +12,16 @@ import {
 import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
+import {ProductReviews} from '~/components/ProductReviews';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 
 export const meta: Route.MetaFunction = ({data}) => {
   return [
-    {title: `Hydrogen | ${data?.product.title ?? ''}`},
+    {title: data?.product.seo.title ?? `Hydrogen | ${data?.product.title ?? ''}`},
+    {
+      name: 'description',
+      content: data?.product.seo.description ?? data?.product.description,
+    },
     {
       rel: 'canonical',
       href: `/products/${data?.product.handle}`,
@@ -31,6 +37,36 @@ export async function loader(args: Route.LoaderArgs) {
   const criticalData = await loadCriticalData(args);
 
   return {...deferredData, ...criticalData};
+}
+
+export async function action({request, context}: Route.ActionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+
+  if (intent !== 'submit-review') {
+    return data({ok: false, errors: ['Unsupported product action.']}, {status: 400});
+  }
+
+  const result = await context.reviews
+    .submitReview({
+      productHandle: String(formData.get('productHandle') ?? ''),
+      productId: String(formData.get('productId') ?? ''),
+      rating: Number(formData.get('rating')),
+      title: String(formData.get('title') ?? ''),
+      body: String(formData.get('body') ?? ''),
+      reviewerName: String(formData.get('reviewerName') ?? ''),
+      email: String(formData.get('email') ?? ''),
+      honeypot: String(formData.get('company') ?? ''),
+    })
+    .catch((error: Error) => {
+      console.error(error);
+      return {
+        ok: false as const,
+        errors: ['Review submission is temporarily unavailable.'],
+      };
+    });
+
+  return data(result, {status: result.ok ? 200 : 400});
 }
 
 /**
@@ -72,12 +108,23 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
 function loadDeferredData({context, params}: Route.LoaderArgs) {
   // Put any API calls that is not critical to be available on first page render
   // For example: product reviews, product recommendations, social feeds.
+  const reviews = params.handle
+    ? context.reviews.getProductReviews(params.handle)
+    : Promise.resolve({
+        enabled: false,
+        aggregate: {
+          averageRating: 0,
+          reviewCount: 0,
+          distribution: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+        },
+        reviews: [],
+      });
 
-  return {};
+  return {reviews};
 }
 
 export default function Product() {
-  const {product} = useLoaderData<typeof loader>();
+  const {product, reviews} = useLoaderData<typeof loader>();
 
   // Optimistically selects a variant with given available variant information
   const selectedVariant = useOptimisticVariant(
@@ -120,6 +167,19 @@ export default function Product() {
         <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
         <br />
       </div>
+      <Suspense fallback={<ProductReviewsSkeleton />}>
+        <Await resolve={reviews}>
+          {(resolvedReviews) => (
+            <>
+              <ProductReviewStructuredData
+                product={product}
+                reviews={resolvedReviews}
+              />
+              <ProductReviews product={product} reviews={resolvedReviews} />
+            </>
+          )}
+        </Await>
+      </Suspense>
       <Analytics.ProductView
         data={{
           products: [
@@ -136,6 +196,66 @@ export default function Product() {
         }}
       />
     </div>
+  );
+}
+
+function ProductReviewsSkeleton() {
+  return (
+    <section className="product-reviews" aria-labelledby="product-reviews-loading">
+      <h2 id="product-reviews-loading">Reviews</h2>
+      <p>Loading reviews...</p>
+    </section>
+  );
+}
+
+function ProductReviewStructuredData({
+  product,
+  reviews,
+}: {
+  product: Awaited<ReturnType<typeof loader>>['product'];
+  reviews: Awaited<ReturnType<typeof loader>>['reviews'] extends Promise<infer T>
+    ? T
+    : never;
+}) {
+  if (!reviews.enabled || reviews.aggregate.reviewCount === 0) return null;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description,
+    sku: product.selectedOrFirstAvailableVariant?.sku,
+    brand: {
+      '@type': 'Brand',
+      name: product.vendor,
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: reviews.aggregate.averageRating,
+      reviewCount: reviews.aggregate.reviewCount,
+    },
+    review: reviews.reviews.map((review) => ({
+      '@type': 'Review',
+      reviewRating: {
+        '@type': 'Rating',
+        ratingValue: review.rating,
+        bestRating: 5,
+      },
+      author: {
+        '@type': 'Person',
+        name: review.reviewerName,
+      },
+      name: review.title,
+      reviewBody: review.body,
+      datePublished: review.createdAt,
+    })),
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}}
+    />
   );
 }
 
