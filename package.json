@@ -10,7 +10,11 @@
     "preview": "shopify hydrogen preview --build",
     "lint": "eslint --no-error-on-unmatched-pattern .",
     "typecheck": "react-router typegen && tsc --noEmit",
-    "codegen": "shopify hydrogen codegen && react-router typegen"
+    "codegen": "shopify hydrogen codegen && react-router typegen",
+    "seed:shopify": "node scripts/seed-shopify.mjs",
+    "seed:shopify:apply": "node scripts/seed-shopify.mjs --apply",
+    "seed:shopify:media": "node scripts/seed-shopify-media.mjs",
+    "seed:shopify:media:apply": "node scripts/seed-shopify-media.mjs --apply"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {
