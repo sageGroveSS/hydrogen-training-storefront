@@ -7,6 +7,7 @@ Use the [Shopify AI Toolkit](https://shopify.dev/docs/apps/build/ai-toolkit) for
 ## Project workflow
 
 - Keep `main` deployable. Feature work should land through pull requests after CI passes.
+- Do not use a long-lived `develop` branch. `main` is the integration and release branch.
 - Use short-lived branches with these prefixes:
   - `feature/` for user-facing storefront work
   - `fix/` for bug fixes
@@ -15,6 +16,25 @@ Use the [Shopify AI Toolkit](https://shopify.dev/docs/apps/build/ai-toolkit) for
 - Keep each PR scoped to one reviewable slice, for example reviews foundation, homepage design, customer wishlist, or Oxygen workflow cleanup.
 - Prefer squash merges into `main` so the public history reads like a release log.
 - Commit messages must be in English and start with `feature:`, `fix:`, `refactor:`, `chore:`, or `docs:`. Do not add co-author trailers.
+- Delete local and remote topic branches after merge.
+
+## Git flow
+
+- Start every new branch from the latest `origin/main`.
+- Use one PR per functional slice. A good PR should be easy to review, deploy to preview, and revert.
+- For dependent work, use a short stack:
+  - first PR targets `main`
+  - second PR targets the first branch
+  - after the first PR merges, rebase or update the next branch onto `main` and retarget it to `main`
+- Merge infrastructure PRs before feature PRs when the infrastructure changes CI, deploys, secrets, or branch policy.
+- Rebase topic branches on `origin/main` before merge when doing so keeps the PR focused. Do not rewrite `main`.
+- Use `--force-with-lease`, never plain force push, when updating a pushed topic branch after rebase.
+- Prefer this merge order:
+  - `chore/` CI, deployment, and setup changes
+  - `feature/` backend/data foundations
+  - `feature/` UI and UX layers
+  - `fix/` follow-ups found during preview review
+- Production deploy happens from `main` only, after the PR is merged and GitHub environments allow the deployment.
 
 ## Quality gates
 
