@@ -1,5 +1,5 @@
 import {Suspense} from 'react';
-import {Await, NavLink, useAsyncValue} from 'react-router';
+import {Await, Link, NavLink, useAsyncValue} from 'react-router';
 import {
   type CartViewPayload,
   useAnalytics,
@@ -26,7 +26,7 @@ export function Header({
   const {shop, menu} = header;
   return (
     <header className="header">
-      <NavLink prefetch="intent" to="/" style={activeLinkStyle} end>
+      <NavLink className="header-brand" prefetch="intent" to="/" end>
         <strong>{shop.name}</strong>
       </NavLink>
       <HeaderMenu
@@ -61,7 +61,7 @@ export function HeaderMenu({
           end
           onClick={close}
           prefetch="intent"
-          style={activeLinkStyle}
+          className="header-menu-item"
           to="/"
         >
           Home
@@ -84,7 +84,6 @@ export function HeaderMenu({
             key={item.id}
             onClick={close}
             prefetch="intent"
-            style={activeLinkStyle}
             to={url}
           >
             {item.title}
@@ -102,7 +101,7 @@ function HeaderCtas({
   return (
     <nav className="header-ctas" role="navigation">
       <HeaderMenuMobileToggle />
-      <NavLink prefetch="intent" to="/account" style={activeLinkStyle}>
+      <NavLink className="header-icon-link" prefetch="intent" to="/account">
         <Suspense fallback="Sign in">
           <Await resolve={isLoggedIn} errorElement="Sign in">
             {(isLoggedIn) => (isLoggedIn ? 'Account' : 'Sign in')}
@@ -120,9 +119,10 @@ function HeaderMenuMobileToggle() {
   return (
     <button
       className="header-menu-mobile-toggle reset"
+      aria-label="Open menu"
       onClick={() => open('mobile')}
     >
-      <h3>☰</h3>
+      <span aria-hidden="true" />
     </button>
   );
 }
@@ -130,7 +130,7 @@ function HeaderMenuMobileToggle() {
 function SearchToggle() {
   const {open} = useAside();
   return (
-    <button className="reset" onClick={() => open('search')}>
+    <button className="header-icon-link reset" onClick={() => open('search')}>
       Search
     </button>
   );
@@ -141,8 +141,9 @@ function CartBadge({count}: {count: number}) {
   const {publish, shop, cart, prevCart} = useAnalytics();
 
   return (
-    <a
-      href="/cart"
+    <Link
+      className="header-cart-link"
+      to="/cart"
       onClick={(e) => {
         e.preventDefault();
         open('cart');
@@ -154,8 +155,8 @@ function CartBadge({count}: {count: number}) {
         } as CartViewPayload);
       }}
     >
-      Cart <span aria-label={`(items: ${count})`}>{count}</span>
-    </a>
+      Cart <span aria-label={`items: ${count}`}>{count}</span>
+    </Link>
   );
 }
 
@@ -216,16 +217,3 @@ const FALLBACK_HEADER_MENU = {
     },
   ],
 };
-
-function activeLinkStyle({
-  isActive,
-  isPending,
-}: {
-  isActive: boolean;
-  isPending: boolean;
-}) {
-  return {
-    fontWeight: isActive ? 'bold' : undefined,
-    color: isPending ? 'grey' : 'black',
-  };
-}
