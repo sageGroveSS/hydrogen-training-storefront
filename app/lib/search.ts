@@ -14,9 +14,16 @@ export type RegularSearchReturn = ResultWithItems<
   'regular',
   RegularSearchQuery
 >;
+
+type PredictiveSearchItems = NonNullable<
+  PredictiveSearchQuery['predictiveSearch']
+> & {
+  products: PredictiveSearchQuery['productResults']['nodes'];
+};
+
 export type PredictiveSearchReturn = ResultWithItems<
   'predictive',
-  NonNullable<PredictiveSearchQuery['predictiveSearch']>
+  PredictiveSearchItems
 >;
 
 /**

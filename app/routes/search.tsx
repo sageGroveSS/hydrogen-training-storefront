@@ -184,20 +184,15 @@ export const SEARCH_QUERY = `#graphql
         }
       }
     }
-    products: search(
+    products(
       after: $endCursor,
       before: $startCursor,
       first: $first,
       last: $last,
       query: $term,
-      sortKey: RELEVANCE,
-      types: [PRODUCT],
-      unavailableProducts: HIDE,
     ) {
       nodes {
-        ...on Product {
-          ...SearchProduct
-        }
+        ...SearchProduct
       }
       pageInfo {
         ...PageInfoFragment
@@ -350,6 +345,7 @@ const PREDICTIVE_SEARCH_QUERY = `#graphql
       limitScope: $limitScope,
       query: $term,
       types: $types,
+      unavailableProducts: SHOW,
     ) {
       articles {
         ...PredictiveArticle
@@ -360,11 +356,13 @@ const PREDICTIVE_SEARCH_QUERY = `#graphql
       pages {
         ...PredictivePage
       }
-      products {
-        ...PredictiveProduct
-      }
       queries {
         ...PredictiveQuery
+      }
+    }
+    productResults: products(first: $limit, query: $term) {
+      nodes {
+        ...PredictiveProduct
       }
     }
   }
@@ -396,8 +394,11 @@ async function predictiveSearch({
   // Predictively search articles, collections, pages, products, and queries (suggestions)
   const {
     predictiveSearch: items,
+    productResults,
     errors,
-  }: PredictiveSearchQuery & {errors?: Array<{message: string}>} =
+  }: PredictiveSearchQuery & {
+    errors?: Array<{message: string}>;
+  } =
     await storefront.query(PREDICTIVE_SEARCH_QUERY, {
       variables: {
         // customize search options as needed
@@ -417,10 +418,15 @@ async function predictiveSearch({
     throw new Error('No predictive search data returned from Shopify API');
   }
 
-  const total = Object.values(items).reduce(
+  const resultItems = {
+    ...items,
+    products: productResults?.nodes ?? [],
+  };
+
+  const total = Object.values(resultItems).reduce(
     (acc: number, item: Array<unknown>) => acc + item.length,
     0,
   );
 
-  return {type, term, result: {items, total}};
+  return {type, term, result: {items: resultItems, total}};
 }
