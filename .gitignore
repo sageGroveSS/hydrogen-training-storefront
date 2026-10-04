@@ -9,3 +9,5 @@ node_modules
 .react-router
 .env.seed
 tsconfig.tsbuildinfo
+.agents
+skills-lock.json
