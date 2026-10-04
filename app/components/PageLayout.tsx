@@ -71,13 +71,19 @@ function CartAside({cart}: {cart: PageLayoutProps['cart']}) {
 
 function SearchAside() {
   const queriesDatalistId = useId();
+  const quickLinks = [
+    ['Sofas', '/search?q=sofa'],
+    ['Storage', '/collections/all?filter.p.product_type=Storage'],
+    ['Tables', '/collections/all?filter.p.product_type=Tables'],
+    ['Textiles', '/collections/all?filter.p.product_type=Textiles'],
+  ] as const;
+
   return (
-    <Aside type="search" heading="SEARCH">
+    <Aside type="search" heading="Search">
       <div className="predictive-search">
-        <br />
         <SearchFormPredictive>
-          {({fetchResults, goToSearch, inputRef}) => (
-            <>
+          {({fetchResults, goToSearch, inputRef, fetcher}) => (
+            <div className="predictive-search-controls">
               <input
                 name="q"
                 onChange={fetchResults}
@@ -87,9 +93,15 @@ function SearchAside() {
                 type="search"
                 list={queriesDatalistId}
               />
-              &nbsp;
-              <button onClick={goToSearch}>Search</button>
-            </>
+              <button type="button" onClick={goToSearch}>
+                Search
+              </button>
+              {fetcher.state === 'loading' ? (
+                <span className="predictive-search-loading" role="status">
+                  Searching
+                </span>
+              ) : null}
+            </div>
           )}
         </SearchFormPredictive>
 
@@ -98,11 +110,25 @@ function SearchAside() {
             const {articles, collections, pages, products, queries} = items;
 
             if (state === 'loading' && term.current) {
-              return <div>Loading...</div>;
+              return null;
             }
 
             if (!total) {
-              return <SearchResultsPredictive.Empty term={term} />;
+              return (
+                <>
+                  <SearchResultsPredictive.Empty term={term} />
+                  <div className="predictive-search-suggestions">
+                    <p className="section-kicker">Popular paths</p>
+                    <div>
+                      {quickLinks.map(([label, to]) => (
+                        <Link key={label} onClick={closeSearch} to={to}>
+                          {label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              );
             }
 
             return (
@@ -133,13 +159,11 @@ function SearchAside() {
                 />
                 {term.current && total ? (
                   <Link
+                    className="predictive-search-all"
                     onClick={closeSearch}
                     to={`${SEARCH_ENDPOINT}?q=${term.current}`}
                   >
-                    <p>
-                      View all results for <q>{term.current}</q>
-                      &nbsp; →
-                    </p>
+                    View all results →
                   </Link>
                 ) : null}
               </>

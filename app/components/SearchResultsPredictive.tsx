@@ -90,7 +90,7 @@ function SearchResultsPredictiveArticles({
   return (
     <div className="predictive-search-result" key="articles">
       <h5>Articles</h5>
-      <ul>
+      <ul className="predictive-search-list">
         {articles.map((article) => {
           const articleUrl = urlWithTrackingParams({
             baseUrl: `/blogs/${article.blog.handle}/${article.handle}`,
@@ -131,7 +131,7 @@ function SearchResultsPredictiveCollections({
   return (
     <div className="predictive-search-result" key="collections">
       <h5>Collections</h5>
-      <ul>
+      <ul className="predictive-search-list">
         {collections.map((collection) => {
           const collectionUrl = urlWithTrackingParams({
             baseUrl: `/collections/${collection.handle}`,
@@ -172,7 +172,7 @@ function SearchResultsPredictivePages({
   return (
     <div className="predictive-search-result" key="pages">
       <h5>Pages</h5>
-      <ul>
+      <ul className="predictive-search-list">
         {pages.map((page) => {
           const pageUrl = urlWithTrackingParams({
             baseUrl: `/pages/${page.handle}`,
@@ -205,7 +205,7 @@ function SearchResultsPredictiveProducts({
   return (
     <div className="predictive-search-result" key="products">
       <h5>Products</h5>
-      <ul>
+      <ul className="predictive-search-list">
         {products.map((product) => {
           const productUrl = urlWithTrackingParams({
             baseUrl: `/products/${product.handle}`,
@@ -268,8 +268,8 @@ function SearchResultsPredictiveEmpty({
   }
 
   return (
-    <p>
-      No results found for <q>{term.current}</q>
+    <p className="predictive-search-empty">
+      No results found for <q>{term.current}</q>.
     </p>
   );
 }

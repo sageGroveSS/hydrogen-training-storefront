@@ -9,7 +9,11 @@ import type {PredictiveSearchReturn} from '~/lib/search';
 import {useAside} from './Aside';
 
 type SearchFormPredictiveChildren = (args: {
-  fetchResults: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  fetchResults: (
+    event:
+      | React.ChangeEvent<HTMLInputElement>
+      | React.FocusEvent<HTMLInputElement>,
+  ) => void;
   goToSearch: () => void;
   inputRef: React.MutableRefObject<HTMLInputElement | null>;
   fetcher: Fetcher<PredictiveSearchReturn>;
@@ -51,7 +55,11 @@ export function SearchFormPredictive({
   }
 
   /** Fetch search results based on the input value */
-  function fetchResults(event: React.ChangeEvent<HTMLInputElement>) {
+  function fetchResults(
+    event:
+      | React.ChangeEvent<HTMLInputElement>
+      | React.FocusEvent<HTMLInputElement>,
+  ) {
     void fetcher.submit(
       {q: event.target.value || '', limit: 5, predictive: true},
       {method: 'GET', action: SEARCH_ENDPOINT},
