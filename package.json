@@ -14,7 +14,10 @@
     "seed:shopify": "node scripts/seed-shopify.mjs",
     "seed:shopify:apply": "node scripts/seed-shopify.mjs --apply",
     "seed:shopify:media": "node scripts/seed-shopify-media.mjs",
-    "seed:shopify:media:apply": "node scripts/seed-shopify-media.mjs --apply"
+    "seed:shopify:media:apply": "node scripts/seed-shopify-media.mjs --apply",
+    "seed:shopify:homepage": "node scripts/seed-shopify-homepage.mjs",
+    "seed:shopify:homepage:apply": "node scripts/seed-shopify-homepage.mjs --apply",
+    "check:homepage": "node --experimental-strip-types scripts/check-homepage-content.mjs"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {
