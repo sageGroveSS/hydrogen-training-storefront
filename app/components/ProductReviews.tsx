@@ -13,13 +13,16 @@ export function ProductReviews({product, reviews}: ProductReviewsProps) {
   const isSubmitting = navigation.state === 'submitting';
   const showSuccess = actionData?.ok === true;
   const errors = actionData?.ok === false ? actionData.errors : [];
+  const reviewsUnavailable = !reviews.enabled;
 
   return (
     <section className="product-reviews" aria-labelledby="product-reviews">
       <div className="product-reviews-header">
         <div>
           <h2 id="product-reviews">Reviews</h2>
-          {reviews.enabled && reviews.aggregate.reviewCount > 0 ? (
+          {reviewsUnavailable ? (
+            <p>Reviews are temporarily unavailable.</p>
+          ) : reviews.aggregate.reviewCount > 0 ? (
             <p>
               {reviews.aggregate.averageRating.toFixed(1)} average from{' '}
               {reviews.aggregate.reviewCount} approved reviews
@@ -42,9 +45,7 @@ export function ProductReviews({product, reviews}: ProductReviewsProps) {
               <p>{review.body}</p>
               <small>
                 {review.reviewerName} ·{' '}
-                {new Intl.DateTimeFormat('en', {dateStyle: 'medium'}).format(
-                  new Date(review.createdAt),
-                )}
+                {formatReviewDate(review.createdAt)}
               </small>
             </li>
           ))}
@@ -98,10 +99,17 @@ export function ProductReviews({product, reviews}: ProductReviewsProps) {
             Review submitted for moderation.
           </p>
         ) : null}
-        <button type="submit" disabled={isSubmitting || !reviews.enabled}>
+        <button type="submit" disabled={isSubmitting || reviewsUnavailable}>
           {isSubmitting ? 'Submitting...' : 'Submit review'}
         </button>
       </Form>
     </section>
   );
+}
+
+function formatReviewDate(date: string) {
+  return new Intl.DateTimeFormat('en', {
+    dateStyle: 'medium',
+    timeZone: 'UTC',
+  }).format(new Date(date));
 }

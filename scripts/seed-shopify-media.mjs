@@ -28,55 +28,71 @@ for (const key of ['SHOPIFY_SHOP', 'SHOPIFY_CLIENT_ID', 'SHOPIFY_CLIENT_SECRET',
   if (!env[key]) throw new Error(`Missing ${key} in .env.seed`);
 }
 
-const imageBase = 'https://picsum.photos/seed';
+const replaceProductMedia = process.argv.includes('--replace-product-media');
 
 const collectionImages = [
-  ['sofas', 'Sofas', `${imageBase}/hydrogen-sofas-cover/1800/1000.jpg`],
-  ['chairs', 'Chairs', `${imageBase}/hydrogen-chairs-cover/1800/1000.jpg`],
-  ['tables', 'Tables', `${imageBase}/hydrogen-tables-cover/1800/1000.jpg`],
-  ['lighting', 'Lighting', `${imageBase}/hydrogen-lighting-cover/1800/1000.jpg`],
-  ['living-room-featured', 'Living Room / Featured', `${imageBase}/hydrogen-living-room-cover/1800/1000.jpg`],
+  ['sofas', 'Sofas', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1800&q=85'],
+  ['chairs', 'Chairs', 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?auto=format&fit=crop&w=1800&q=85'],
+  ['tables', 'Tables', 'https://images.unsplash.com/photo-1449247709967-d4461a6a6103?auto=format&fit=crop&w=1800&q=85'],
+  ['lighting', 'Lighting', 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1800&q=85'],
+  ['living-room-featured', 'Living Room / Featured', 'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1800&q=85'],
 ];
 
 const productImages = [
-  ['luna-modular-sofa', 'Luna Modular Sofa', `${imageBase}/luna-modular-sofa/1400/1000.jpg`],
-  ['arbor-low-sofa', 'Arbor Low Sofa', `${imageBase}/arbor-low-sofa/1400/1000.jpg`],
-  ['marin-sleeper-sofa', 'Marin Sleeper Sofa', `${imageBase}/marin-sleeper-sofa/1400/1000.jpg`],
-  ['cove-loveseat', 'Cove Loveseat', `${imageBase}/cove-loveseat/1400/1000.jpg`],
-  ['nora-lounge-chair', 'Nora Lounge Chair', `${imageBase}/nora-lounge-chair/1400/1000.jpg`],
-  ['field-dining-chair', 'Field Dining Chair', `${imageBase}/field-dining-chair/1400/1000.jpg`],
-  ['palisade-accent-chair', 'Palisade Accent Chair', `${imageBase}/palisade-accent-chair/1400/1000.jpg`],
-  ['plinth-coffee-table', 'Plinth Coffee Table', `${imageBase}/plinth-coffee-table/1400/1000.jpg`],
-  ['arc-side-table', 'Arc Side Table', `${imageBase}/arc-side-table/1400/1000.jpg`],
-  ['harbor-dining-table', 'Harbor Dining Table', `${imageBase}/harbor-dining-table/1400/1000.jpg`],
-  ['glow-floor-lamp', 'Glow Floor Lamp', `${imageBase}/glow-floor-lamp/1400/1000.jpg`],
-  ['linen-table-lamp', 'Linen Table Lamp', `${imageBase}/linen-table-lamp/1400/1000.jpg`],
-  ['atlas-wool-rug', 'Atlas Wool Rug', `${imageBase}/atlas-wool-rug/1400/1000.jpg`],
-  ['terra-flatweave-rug', 'Terra Flatweave Rug', `${imageBase}/terra-flatweave-rug/1400/1000.jpg`],
-  ['brass-catchall-tray', 'Brass Catchall Tray', `${imageBase}/brass-catchall-tray/1400/1000.jpg`],
-  ['linen-storage-basket', 'Linen Storage Basket', `${imageBase}/linen-storage-basket/1400/1000.jpg`],
+  ['luna-modular-sofa', 'Luna Modular Sofa', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1400&q=85'],
+  ['arbor-low-sofa', 'Arbor Low Sofa', 'https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=1400&q=85'],
+  ['marin-sleeper-sofa', 'Marin Sleeper Sofa', 'https://images.unsplash.com/photo-1567016432779-094069958ea5?auto=format&fit=crop&w=1400&q=85'],
+  ['cove-loveseat', 'Cove Loveseat', 'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1400&q=85'],
+  ['nora-lounge-chair', 'Nora Lounge Chair', 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?auto=format&fit=crop&w=1400&q=85'],
+  ['field-dining-chair', 'Field Dining Chair', 'https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&w=1400&q=85'],
+  ['palisade-accent-chair', 'Palisade Accent Chair', 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1400&q=85'],
+  ['plinth-coffee-table', 'Plinth Coffee Table', 'https://images.unsplash.com/photo-1532372320572-cda25653a694?auto=format&fit=crop&w=1400&q=85'],
+  ['arc-side-table', 'Arc Side Table', 'https://images.unsplash.com/photo-1499933374294-4584851497cc?auto=format&fit=crop&w=1400&q=85'],
+  ['harbor-dining-table', 'Harbor Dining Table', 'https://images.unsplash.com/photo-1449247709967-d4461a6a6103?auto=format&fit=crop&w=1400&q=85'],
+  ['glow-floor-lamp', 'Glow Floor Lamp', 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1400&q=85'],
+  ['linen-table-lamp', 'Linen Table Lamp', 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=1400&q=85'],
+  ['atlas-wool-rug', 'Atlas Wool Rug', 'https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&w=1400&q=85'],
+  ['terra-flatweave-rug', 'Terra Flatweave Rug', 'https://images.unsplash.com/photo-1617103996702-96ff29b1c467?auto=format&fit=crop&w=1400&q=85'],
+  ['brass-catchall-tray', 'Brass Catchall Tray', 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=1400&q=85'],
+  ['linen-storage-basket', 'Linen Storage Basket', 'https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=1400&q=85'],
 ];
 
 async function main() {
+  const failures = [];
+
   console.log(apply ? 'Seeding Shopify media...' : 'Dry run. Re-run with --apply to upload media.');
   console.log(`Collection images: ${collectionImages.length}`);
   console.log(`Product images: ${productImages.length}`);
+  if (replaceProductMedia) {
+    console.log('Existing product media will be replaced.');
+  }
 
   if (!apply) return;
 
   const token = await getAdminToken();
 
   for (const [handle, title, src] of collectionImages) {
-    await updateCollectionImage(token, handle, title, src);
+    await updateCollectionImage(token, handle, title, src).catch((error) => {
+      failures.push(`collection ${handle}: ${error.message}`);
+      console.warn(`Skipped collection image: ${handle}`);
+    });
   }
 
   for (const [handle, title, src] of productImages) {
-    await updateProductImage(token, handle, title, src);
+    await updateProductImage(token, handle, title, src).catch((error) => {
+      failures.push(`product ${handle}: ${error.message}`);
+      console.warn(`Skipped product image: ${handle}`);
+    });
   }
 
   await wait(5000);
   const report = await mediaReport(token);
   console.log(JSON.stringify(report, null, 2));
+  if (failures.length) {
+    console.warn('Media seed finished with failures:');
+    for (const failure of failures) console.warn(`- ${failure}`);
+    process.exitCode = 1;
+  }
 }
 
 async function getAdminToken() {
@@ -168,7 +184,7 @@ async function updateProductImage(token, handle, title, src) {
     `query ProductByHandle($handle: String!) {
       productByHandle(handle: $handle) {
         id
-        media(first: 1) {
+        media(first: 20) {
           nodes {
             id
           }
@@ -183,7 +199,9 @@ async function updateProductImage(token, handle, title, src) {
     return;
   }
 
-  if (product.media.nodes.length > 0) {
+  const existingMediaIds = product.media.nodes.map((media) => media.id);
+
+  if (existingMediaIds.length > 0 && !replaceProductMedia) {
     console.log(`Product already has media, skipping: ${handle}`);
     return;
   }
@@ -217,6 +235,62 @@ async function updateProductImage(token, handle, title, src) {
   );
   handleUserErrors(`product ${handle}`, result.productSet.userErrors);
   console.log(`Uploaded product image: ${handle}`);
+
+  if (existingMediaIds.length > 0) {
+    await removeProductMediaReferences(token, product.id, existingMediaIds);
+    console.log(`Removed existing product media references: ${handle}`);
+  }
+}
+
+async function removeProductMediaReferences(token, productId, mediaIds) {
+  try {
+    const result = await adminGraphql(
+      token,
+      `mutation FileUpdate($files: [FileUpdateInput!]!) {
+        fileUpdate(files: $files) {
+          files {
+            id
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`,
+      {
+        files: mediaIds.map((id) => ({
+          id,
+          referencesToRemove: [productId],
+        })),
+      },
+    );
+
+    handleUserErrors('remove product media references', result.fileUpdate.userErrors);
+    return;
+  } catch (error) {
+    if (!String(error.message).includes('ACCESS_DENIED')) throw error;
+  }
+
+  const result = await adminGraphql(
+    token,
+    `mutation ProductDeleteMedia($productId: ID!, $mediaIds: [ID!]!) {
+      productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+        deletedMediaIds
+        mediaUserErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {productId, mediaIds},
+  );
+
+  handleUserErrors(
+    'delete product media',
+    result.productDeleteMedia.mediaUserErrors.filter(
+      (error) => !error.message.includes('does not exist'),
+    ),
+  );
 }
 
 async function mediaReport(token) {
