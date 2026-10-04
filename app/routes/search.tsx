@@ -53,7 +53,6 @@ export default function SearchPage() {
               ref={inputRef}
               type="search"
             />
-            &nbsp;
             <button type="submit">Search</button>
           </>
         )}
@@ -238,8 +237,8 @@ async function regularSearch({
     throw new Error('No search data returned from Shopify API');
   }
 
-  const total = Object.values(items).reduce(
-    (acc: number, {nodes}: {nodes: Array<unknown>}) => acc + nodes.length,
+  const total = Object.values(items).reduce<number>(
+    (acc, item) => acc + countSearchResults(item),
     0,
   );
 
@@ -417,10 +416,24 @@ async function predictiveSearch({
     throw new Error('No predictive search data returned from Shopify API');
   }
 
-  const total = Object.values(items).reduce(
-    (acc: number, item: Array<unknown>) => acc + item.length,
+  const total = Object.values(items).reduce<number>(
+    (acc, item) => acc + countSearchResults(item),
     0,
   );
 
   return {type, term, result: {items, total}};
+}
+
+function countSearchResults(item: unknown) {
+  if (Array.isArray(item)) return item.length;
+  if (
+    item &&
+    typeof item === 'object' &&
+    'nodes' in item &&
+    Array.isArray(item.nodes)
+  ) {
+    return item.nodes.length;
+  }
+
+  return 0;
 }
