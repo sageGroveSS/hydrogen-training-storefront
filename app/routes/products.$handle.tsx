@@ -15,9 +15,15 @@ import {ProductForm} from '~/components/ProductForm';
 import {ProductReviews} from '~/components/ProductReviews';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 
+import {readReviewForm, reviewClientHash} from '~/lib/reviews.server';
+import {reviewPageOptions} from '~/lib/review-validation';
+
 export const meta: Route.MetaFunction = ({data}) => {
   return [
-    {title: data?.product.seo.title ?? `Hydrogen | ${data?.product.title ?? ''}`},
+    {
+      title:
+        data?.product.seo.title ?? `Hydrogen | ${data?.product.title ?? ''}`,
+    },
     {
       name: 'description',
       content: data?.product.seo.description ?? data?.product.description,
@@ -39,34 +45,40 @@ export async function loader(args: Route.LoaderArgs) {
   return {...deferredData, ...criticalData};
 }
 
-export async function action({request, context}: Route.ActionArgs) {
-  const formData = await request.formData();
-  const intent = formData.get('intent');
+export function headers() {
+  return {'Cache-Control': 'private, no-store'};
+}
 
-  if (intent !== 'submit-review') {
-    return data({ok: false, errors: ['Unsupported product action.']}, {status: 400});
+export async function action(args: Route.ActionArgs) {
+  const {request, context} = args;
+  const formData = await readReviewForm(request);
+  if (formData.get('intent') !== 'submit-review') {
+    return data(
+      {ok: false as const, errors: ['Unsupported product action.']},
+      {status: 400},
+    );
   }
-
-  const result = await context.reviews
-    .submitReview({
-      productHandle: String(formData.get('productHandle') ?? ''),
-      productId: String(formData.get('productId') ?? ''),
+  const {product} = await loadCriticalData(args);
+  const result = await context.reviews.submitReview(
+    {
+      productHandle: product.handle,
+      productId: product.id,
       rating: Number(formData.get('rating')),
-      title: String(formData.get('title') ?? ''),
-      body: String(formData.get('body') ?? ''),
-      reviewerName: String(formData.get('reviewerName') ?? ''),
-      email: String(formData.get('email') ?? ''),
-      honeypot: String(formData.get('company') ?? ''),
-    })
-    .catch((error: Error) => {
-      console.error(error);
-      return {
-        ok: false as const,
-        errors: ['Review submission is temporarily unavailable.'],
-      };
-    });
-
-  return data(result, {status: result.ok ? 200 : 400});
+      title: formData.get('title') ?? '',
+      body: formData.get('body') ?? '',
+      reviewerName: formData.get('reviewerName') ?? '',
+      email: formData.get('email') ?? '',
+      honeypot: formData.get('company') ?? '',
+    },
+    await reviewClientHash(request, context.env.SESSION_SECRET),
+  );
+  return data(result, {
+    status: result.statusCode,
+    headers: {
+      'Cache-Control': 'private, no-store',
+      ...(result.statusCode === 429 ? {'Retry-After': '600'} : {}),
+    },
+  });
 }
 
 /**
@@ -105,13 +117,19 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
  * fetched after the initial page load. If it's unavailable, the page should still 200.
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
-function loadDeferredData({context, params}: Route.LoaderArgs) {
+function loadDeferredData({context, params, request}: Route.LoaderArgs) {
   // Put any API calls that is not critical to be available on first page render
   // For example: product reviews, product recommendations, social feeds.
   const reviews = params.handle
-    ? context.reviews.getProductReviews(params.handle)
+    ? context.reviews.getProductReviews(
+        params.handle,
+        reviewPageOptions(new URL(request.url)),
+      )
     : Promise.resolve({
         enabled: false,
+        page: 1,
+        totalPages: 1,
+        sort: 'newest' as const,
         aggregate: {
           averageRating: 0,
           reviewCount: 0,
@@ -201,7 +219,10 @@ export default function Product() {
 
 function ProductReviewsSkeleton() {
   return (
-    <section className="product-reviews" aria-labelledby="product-reviews-loading">
+    <section
+      className="product-reviews"
+      aria-labelledby="product-reviews-loading"
+    >
       <h2 id="product-reviews-loading">Reviews</h2>
       <p>Loading reviews...</p>
     </section>
@@ -213,7 +234,9 @@ function ProductReviewStructuredData({
   reviews,
 }: {
   product: Awaited<ReturnType<typeof loader>>['product'];
-  reviews: Awaited<ReturnType<typeof loader>>['reviews'] extends Promise<infer T>
+  reviews: Awaited<ReturnType<typeof loader>>['reviews'] extends Promise<
+    infer T
+  >
     ? T
     : never;
 }) {
@@ -254,7 +277,9 @@ function ProductReviewStructuredData({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}}
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+      }}
     />
   );
 }
