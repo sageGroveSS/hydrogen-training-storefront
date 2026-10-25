@@ -109,6 +109,52 @@ export function createReviewsClient(env: Env) {
         return unavailableReviews();
       }
     },
+    async submitReply(
+      input: {
+        productHandle: string;
+        productId: string;
+        reviewId: string;
+        parentReplyId?: string;
+        reviewerName: string;
+        body: string;
+        honeypot?: string;
+      },
+      bucket: string,
+    ): Promise<ReviewSubmissionResult> {
+      const errors = validateReviewInput(input, true);
+      const uuid = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
+      if (
+        !uuid.test(input.reviewId) ||
+        (input.parentReplyId && !uuid.test(input.parentReplyId))
+      )
+        errors.push('Invalid reply target.');
+      if (errors.length) return {ok: false, errors, statusCode: 400};
+      try {
+        await rpc('review_submit', {
+          p_handle: input.productHandle,
+          p_product_id: input.productId,
+          p_name: input.reviewerName,
+          p_body: input.body,
+          p_bucket: bucket,
+          p_review_id: input.reviewId,
+          p_parent_reply_id: input.parentReplyId || null,
+        });
+        return {ok: true, status: 'pending', statusCode: 200};
+      } catch (error) {
+        const status = error instanceof ReviewsError ? error.status : 503;
+        return {
+          ok: false,
+          statusCode: status === 429 ? 429 : status === 400 ? 400 : 503,
+          errors: [
+            status === 429
+              ? 'Too many submissions. Try again in 10 minutes.'
+              : status === 400
+                ? 'This review or reply is no longer available.'
+                : 'Reply submission is temporarily unavailable.',
+          ],
+        };
+      }
+    },
     async listModeration(
       kind: 'review' | 'reply',
       status: ReviewStatus,

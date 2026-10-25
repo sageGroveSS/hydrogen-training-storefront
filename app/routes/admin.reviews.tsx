@@ -26,9 +26,13 @@ const privateHeaders = {
   'Cache-Control': 'private, no-store',
   'Referrer-Policy': 'same-origin',
 };
-export function headers() {
-  return privateHeaders;
-}
+export const headers: Route.HeadersFunction = ({actionHeaders}) => {
+  const headers = new Headers(actionHeaders);
+  for (const [name, value] of Object.entries(privateHeaders)) {
+    headers.set(name, value);
+  }
+  return headers;
+};
 
 export async function loader({request, context}: Route.LoaderArgs) {
   const access = await moderationSession(request, context.env);

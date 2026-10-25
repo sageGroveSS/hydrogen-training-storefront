@@ -53,9 +53,30 @@ in Oxygen before deploying.
 
 ## Reviews datastore
 
-The first Supabase migration is in
-`supabase/migrations/202608300001_create_reviews.sql`. Apply it to the Supabase
-project selected for reviews/comments before enabling review submission.
+Apply the files in `supabase/migrations` in timestamp order to the Reviews project.
+Public reads use a server-only RPC: only approved reviews and replies are returned,
+and email addresses are never included. Ratings cover all approved reviews; lists
+use eight reviews per page and support newest, highest and lowest sorting.
+
+Review and reply submissions go through product actions and start as pending.
+The product identity comes from Shopify, and reply threads allow two levels.
+Submissions share an atomic limit of five per buyer IP in ten minutes; only an
+HMAC hash is stored. Oxygen supplies the trusted `oxygen-buyer-ip` header. Other
+hosts need a trusted equivalent or all visitors share the fallback bucket.
+
+Moderation is at `/admin/reviews`. Configure `REVIEWS_MODERATION_TOKEN` with at
+least 32 random characters in local `.env` and Oxygen. Missing configuration
+disables access. The moderator cookie expires after eight hours; rotating the
+token invalidates existing sessions. This separate moderator access is not a
+Shopify customer login. Approval, rejection and internal notes create audit events.
+Keep the token and Supabase secret key server-side. Anonymous and customer roles
+have no direct table or RPC access.
+
+Run `npm run check:reviews` for validation, request limits, adapter and moderator
+session checks. Run `supabase/tests/reviews.sql` in the project's SQL Editor for
+database regression checks, including more than 1,000 reviews, reply depth,
+moderation, privileges and quotas. Its fixtures are rolled back. Demo data is
+never generated automatically during builds or deployment.
 
 ## Collection filters
 

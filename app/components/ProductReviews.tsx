@@ -1,6 +1,15 @@
-import {Form, useActionData, useNavigation} from 'react-router';
+import {
+  Form,
+  Link,
+  useActionData,
+  useLocation,
+  useNavigation,
+} from 'react-router';
 import type {loader, action} from '~/routes/products.$handle';
-import type {ProductReviews as ProductReviewsData} from '~/lib/reviews.server';
+import type {
+  ProductReviews as ProductReviewsData,
+  ReviewReply,
+} from '~/lib/reviews.server';
 
 type ProductReviewsProps = {
   product: Awaited<ReturnType<typeof loader>>['product'];
@@ -8,76 +17,163 @@ type ProductReviewsProps = {
 };
 
 export function ProductReviews({product, reviews}: ProductReviewsProps) {
+  const {pathname, search} = useLocation();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
-  const isSubmitting = navigation.state === 'submitting';
-  const showSuccess = actionData?.ok === true;
-  const errors = actionData?.ok === false ? actionData.errors : [];
-  const reviewsUnavailable = !reviews.enabled;
-
+  const errors =
+    actionData?.ok === false && actionData.formId === 'review'
+      ? actionData.errors
+      : [];
+  const success = actionData?.ok === true && actionData.formId === 'review';
+  const reviewUrl = (page: number) => {
+    const params = new URLSearchParams(search);
+    params.set('reviewPage', String(page));
+    params.set('reviewSort', reviews.sort);
+    return `${pathname}?${params}#product-reviews`;
+  };
   return (
     <section className="product-reviews" aria-labelledby="product-reviews">
       <div className="product-reviews-header">
         <div>
-          <h2 id="product-reviews">Reviews</h2>
-          {reviewsUnavailable ? (
+          <p className="collection-filter-eyebrow">FROM THE COMMUNITY</p>
+          <h2 id="product-reviews">Reviews & conversations</h2>
+          {!reviews.enabled ? (
             <p>Reviews are temporarily unavailable.</p>
-          ) : reviews.aggregate.reviewCount > 0 ? (
-            <p>
-              {reviews.aggregate.averageRating.toFixed(1)} average from{' '}
-              {reviews.aggregate.reviewCount} approved reviews
-            </p>
+          ) : reviews.aggregate.reviewCount === 0 ? (
+            <p>Be the first to share your experience.</p>
           ) : (
-            <p>No approved reviews yet.</p>
+            <p>Based on {reviews.aggregate.reviewCount} approved reviews</p>
           )}
         </div>
       </div>
-
-      {reviews.reviews.length > 0 ? (
+      {reviews.enabled && reviews.aggregate.reviewCount > 0 && (
+        <div className="review-overview">
+          <div className="review-score">
+            <strong>{reviews.aggregate.averageRating.toFixed(1)}</strong>
+            <span>out of 5</span>
+          </div>
+          <div className="review-distribution" aria-label="Rating distribution">
+            {[5, 4, 3, 2, 1].map((stars) => (
+              <div key={stars}>
+                <span>{stars} ★</span>
+                <meter
+                  min="0"
+                  max={reviews.aggregate.reviewCount}
+                  value={
+                    reviews.aggregate.distribution[stars as 1 | 2 | 3 | 4 | 5]
+                  }
+                  aria-label={`${stars} star reviews`}
+                />
+                <span>
+                  {reviews.aggregate.distribution[stars as 1 | 2 | 3 | 4 | 5]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {reviews.enabled && reviews.aggregate.reviewCount > 0 && (
+        <Form
+          method="get"
+          action={`${pathname}#product-reviews`}
+          className="review-sort"
+          key={reviews.sort}
+        >
+          {[...new URLSearchParams(search)]
+            .filter(([name]) => name !== 'reviewPage' && name !== 'reviewSort')
+            .map(([name, value]) => (
+              <input
+                type="hidden"
+                key={`${name}:${value}`}
+                name={name}
+                value={value}
+              />
+            ))}
+          <label>
+            Sort reviews
+            <select name="reviewSort" defaultValue={reviews.sort}>
+              <option value="newest">Newest first</option>
+              <option value="highest">Highest rating</option>
+              <option value="lowest">Lowest rating</option>
+            </select>
+          </label>
+          <button type="submit">Apply</button>
+        </Form>
+      )}
+      {reviews.reviews.length > 0 && (
         <ol className="product-review-list">
           {reviews.reviews.map((review) => (
             <li key={review.id} className="product-review">
-              <div className="product-review-rating" aria-label={`${review.rating} out of 5 stars`}>
+              <div
+                className="product-review-rating"
+                aria-label={`${review.rating} out of 5 stars`}
+              >
                 {'★'.repeat(review.rating)}
                 {'☆'.repeat(5 - review.rating)}
               </div>
               <h3>{review.title}</h3>
-              <p>{review.body}</p>
+              <p className="review-content">{review.body}</p>
               <small>
-                {review.reviewerName} ·{' '}
-                {formatReviewDate(review.createdAt)}
+                {review.reviewerName} · {formatReviewDate(review.createdAt)}
               </small>
+              <ReplyForm reviewId={review.id} />
+              <ReplyList
+                reviewId={review.id}
+                replies={review.replies}
+                parentId={null}
+              />
             </li>
           ))}
         </ol>
-      ) : null}
-
+      )}
+      {reviews.enabled && reviews.totalPages > 1 && (
+        <nav className="review-pagination" aria-label="Review pages">
+          {reviews.page > 1 && (
+            <Link to={reviewUrl(reviews.page - 1)}>← Previous</Link>
+          )}
+          <span>
+            Page {reviews.page} of {reviews.totalPages}
+          </span>
+          {reviews.page < reviews.totalPages && (
+            <Link to={reviewUrl(reviews.page + 1)}>Next →</Link>
+          )}
+        </nav>
+      )}
       <Form method="post" className="review-form">
         <h3>Write a review</h3>
+        <p>
+          Reviews are checked before publication. Your email is never displayed.
+        </p>
         <input type="hidden" name="intent" value="submit-review" />
-        <input type="hidden" name="productHandle" value={product.handle} />
-        <input type="hidden" name="productId" value={product.id} />
-        <label className="review-form-honeypot">
-          Leave this field empty
-          <input name="company" tabIndex={-1} autoComplete="off" />
-        </label>
+        <Honeypot />
         <label>
           Rating
           <select name="rating" required defaultValue="5">
-            <option value="5">5 stars</option>
-            <option value="4">4 stars</option>
-            <option value="3">3 stars</option>
-            <option value="2">2 stars</option>
-            <option value="1">1 star</option>
+            {[5, 4, 3, 2, 1].map((stars) => (
+              <option key={stars} value={stars}>
+                {stars} stars
+              </option>
+            ))}
           </select>
         </label>
         <label>
           Name
-          <input name="reviewerName" required minLength={2} maxLength={80} />
+          <input
+            name="reviewerName"
+            required
+            minLength={2}
+            maxLength={80}
+            autoComplete="name"
+          />
         </label>
         <label>
-          Email
-          <input name="email" type="email" autoComplete="email" />
+          Email (optional)
+          <input
+            name="email"
+            type="email"
+            autoComplete="email"
+            maxLength={254}
+          />
         </label>
         <label>
           Title
@@ -85,25 +181,143 @@ export function ProductReviews({product, reviews}: ProductReviewsProps) {
         </label>
         <label>
           Review
-          <textarea name="body" required minLength={20} maxLength={2000} rows={5} />
+          <textarea
+            name="body"
+            required
+            minLength={20}
+            maxLength={2000}
+            rows={5}
+          />
         </label>
-        {errors.length > 0 ? (
+        {errors.length > 0 && (
           <div className="review-form-errors" role="alert">
             {errors.map((error) => (
               <p key={error}>{error}</p>
             ))}
           </div>
-        ) : null}
-        {showSuccess ? (
+        )}
+        {success && (
           <p className="review-form-success" role="status">
             Review submitted for moderation.
           </p>
-        ) : null}
-        <button type="submit" disabled={isSubmitting || reviewsUnavailable}>
-          {isSubmitting ? 'Submitting...' : 'Submit review'}
+        )}
+        <button
+          type="submit"
+          disabled={navigation.state !== 'idle' || !reviews.enabled}
+        >
+          {navigation.state === 'submitting' ? 'Submitting…' : 'Submit review'}
         </button>
       </Form>
     </section>
+  );
+}
+
+function ReplyList({
+  reviewId,
+  replies,
+  parentId,
+}: {
+  reviewId: string;
+  replies: ReviewReply[];
+  parentId: string | null;
+}) {
+  const children = replies.filter((reply) => reply.parentReplyId === parentId);
+  if (!children.length) return null;
+  return (
+    <ol className="review-replies">
+      {children.map((reply) => (
+        <li key={reply.id}>
+          <small>
+            <strong>{reply.authorName}</strong> ·{' '}
+            {formatReviewDate(reply.createdAt)}
+          </small>
+          <p className="review-content">{reply.body}</p>
+          {reply.depth < 2 && (
+            <>
+              <ReplyForm reviewId={reviewId} parentReplyId={reply.id} />
+              <ReplyList
+                reviewId={reviewId}
+                replies={replies}
+                parentId={reply.id}
+              />
+            </>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function ReplyForm({
+  reviewId,
+  parentReplyId,
+}: {
+  reviewId: string;
+  parentReplyId?: string;
+}) {
+  const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const formId = `${reviewId}:${parentReplyId ?? ''}`;
+  const active = actionData?.formId === formId;
+  return (
+    <details className="review-reply-form" open={active}>
+      <summary>
+        {parentReplyId ? 'Reply to this comment' : 'Join the conversation'}
+      </summary>
+      <Form method="post" className="review-form">
+        <input type="hidden" name="intent" value="submit-reply" />
+        <input type="hidden" name="reviewId" value={reviewId} />
+        {parentReplyId && (
+          <input type="hidden" name="parentReplyId" value={parentReplyId} />
+        )}
+        <Honeypot />
+        <label>
+          Name
+          <input
+            name="reviewerName"
+            required
+            minLength={2}
+            maxLength={80}
+            autoComplete="name"
+          />
+        </label>
+        <label>
+          Reply
+          <textarea
+            name="body"
+            required
+            minLength={2}
+            maxLength={2000}
+            rows={3}
+          />
+        </label>
+        <p>Replies are published after moderation.</p>
+        {active && actionData?.ok === false && (
+          <div role="alert" className="review-form-errors">
+            {actionData.errors.map((error) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
+        {active && actionData?.ok === true && (
+          <p role="status" className="review-form-success">
+            Reply submitted for moderation.
+          </p>
+        )}
+        <button type="submit" disabled={navigation.state !== 'idle'}>
+          Submit reply
+        </button>
+      </Form>
+    </details>
+  );
+}
+
+function Honeypot() {
+  return (
+    <label className="review-form-honeypot" aria-hidden="true">
+      Leave this field empty
+      <input name="company" tabIndex={-1} autoComplete="off" />
+    </label>
   );
 }
 

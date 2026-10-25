@@ -159,3 +159,41 @@ assert.equal(
 console.warn(
   'Moderation: token verification, signed secure session, expiry and credential rotation passed.',
 );
+
+assert.deepEqual(
+  validateReviewInput({reviewerName: 'Reader', body: 'A useful reply.'}, true),
+  [],
+);
+assert.ok(validateReviewInput({reviewerName: 'R', body: 'a'}, true).length);
+try {
+  let sent;
+  globalThis.fetch = async (url, init) => {
+    sent = JSON.parse(init.body);
+    return Response.json('00000000-0000-4000-8000-000000000001');
+  };
+  const client = createReviewsClient({
+    SUPABASE_URL: 'https://project.test',
+    SUPABASE_SECRET_KEY: 'sb_secret_test',
+  });
+  const reply = {
+    productHandle: 'sofa',
+    productId: 'gid://shopify/Product/1',
+    reviewId: '00000000-0000-4000-8000-000000000001',
+    reviewerName: 'Reader',
+    body: 'A useful reply.',
+  };
+  assert.equal((await client.submitReply(reply, hash)).ok, true);
+  assert.equal(sent.p_review_id, reply.reviewId);
+  assert.equal(sent.p_parent_reply_id, null);
+  assert.equal(
+    (await client.submitReply({...reply, reviewId: 'invalid'}, hash)).ok,
+    false,
+  );
+  globalThis.fetch = async () => new Response('', {status: 400});
+  assert.equal((await client.submitReply(reply, hash)).statusCode, 400);
+} finally {
+  globalThis.fetch = originalFetch;
+}
+console.warn(
+  'Replies: validation, target binding, pending submission and unavailable-parent handling passed.',
+);

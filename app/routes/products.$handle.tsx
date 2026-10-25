@@ -45,40 +45,64 @@ export async function loader(args: Route.LoaderArgs) {
   return {...deferredData, ...criticalData};
 }
 
-export function headers() {
-  return {'Cache-Control': 'private, no-store'};
-}
+export const headers: Route.HeadersFunction = ({actionHeaders}) => {
+  const headers = new Headers(actionHeaders);
+  headers.set('Cache-Control', 'private, no-store');
+  return headers;
+};
 
 export async function action(args: Route.ActionArgs) {
   const {request, context} = args;
   const formData = await readReviewForm(request);
-  if (formData.get('intent') !== 'submit-review') {
+  const intent = formData.get('intent');
+  if (intent !== 'submit-review' && intent !== 'submit-reply') {
     return data(
-      {ok: false as const, errors: ['Unsupported product action.']},
+      {
+        ok: false as const,
+        errors: ['Unsupported product action.'],
+        formId: 'review',
+      },
       {status: 400},
     );
   }
   const {product} = await loadCriticalData(args);
-  const result = await context.reviews.submitReview(
+  const identity = {
+    productHandle: product.handle,
+    productId: product.id,
+    body: formData.get('body') ?? '',
+    reviewerName: formData.get('reviewerName') ?? '',
+    honeypot: formData.get('company') ?? '',
+  };
+  const bucket = await reviewClientHash(request, context.env.SESSION_SECRET);
+  const reviewId = formData.get('reviewId') ?? '';
+  const parentReplyId = formData.get('parentReplyId') ?? '';
+  const result =
+    intent === 'submit-review'
+      ? await context.reviews.submitReview(
+          {
+            ...identity,
+            rating: Number(formData.get('rating')),
+            title: formData.get('title') ?? '',
+            email: formData.get('email') ?? '',
+          },
+          bucket,
+        )
+      : await context.reviews.submitReply(
+          {...identity, reviewId, parentReplyId},
+          bucket,
+        );
+  const formId =
+    intent === 'submit-review' ? 'review' : `${reviewId}:${parentReplyId}`;
+  return data(
+    {...result, formId},
     {
-      productHandle: product.handle,
-      productId: product.id,
-      rating: Number(formData.get('rating')),
-      title: formData.get('title') ?? '',
-      body: formData.get('body') ?? '',
-      reviewerName: formData.get('reviewerName') ?? '',
-      email: formData.get('email') ?? '',
-      honeypot: formData.get('company') ?? '',
+      status: result.statusCode,
+      headers: {
+        'Cache-Control': 'private, no-store',
+        ...(result.statusCode === 429 ? {'Retry-After': '600'} : {}),
+      },
     },
-    await reviewClientHash(request, context.env.SESSION_SECRET),
   );
-  return data(result, {
-    status: result.statusCode,
-    headers: {
-      'Cache-Control': 'private, no-store',
-      ...(result.statusCode === 429 ? {'Retry-After': '600'} : {}),
-    },
-  });
 }
 
 /**
