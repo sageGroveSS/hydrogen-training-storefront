@@ -122,12 +122,19 @@ assert.equal(login.authenticated, false);
 login.session.set('credential', login.credential);
 login.session.set('expires', Date.now() + 10000);
 const cookie = await login.storage.commitSession(login.session);
+const cookiePath = cookie.match(/(?:^|;\s*)Path=([^;]+)/)?.[1];
+for (const pathname of ['/admin/reviews', '/admin/reviews.data']) {
+  assert.ok(
+    pathname === cookiePath || pathname.startsWith(`${cookiePath}/`),
+    `Moderator cookie must reach ${pathname}`,
+  );
+}
 assert.ok(
   cookie.includes('HttpOnly') &&
     cookie.includes('Secure') &&
     cookie.includes('SameSite=Strict'),
 );
-const signedRequest = new Request(moderatorUrl, {
+const signedRequest = new Request(`${moderatorUrl}.data`, {
   headers: {Cookie: cookie.split(';')[0]},
 });
 assert.equal(

@@ -19,11 +19,12 @@ export async function moderationSession(request: Request, env: Env) {
     });
   const storage = createCookieSessionStorage({
     cookie: {
-      name: 'review_moderator',
+      name: 'review_moderator_session',
       httpOnly: true,
       sameSite: 'strict',
       secure: new URL(request.url).protocol === 'https:',
-      path: '/admin/reviews',
+      // React Router submits enhanced forms to /admin/reviews.data.
+      path: '/admin',
       maxAge: 60 * 60 * 8,
       secrets: [env.SESSION_SECRET],
     },
