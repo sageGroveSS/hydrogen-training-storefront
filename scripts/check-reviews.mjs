@@ -98,3 +98,64 @@ try {
 console.warn(
   'Reviews: validation, pagination, private headers, hashing, form boundaries and rate-limit handling passed.',
 );
+
+const {moderationSession, verifyModeratorToken} =
+  await import('../app/lib/review-moderation.server.ts');
+const moderatorEnv = {
+  SESSION_SECRET: 'test-session-secret-not-for-production',
+  REVIEWS_MODERATION_TOKEN: 'test-moderator-token-'.repeat(3),
+};
+assert.equal(
+  await verifyModeratorToken(
+    moderatorEnv.REVIEWS_MODERATION_TOKEN,
+    moderatorEnv.REVIEWS_MODERATION_TOKEN,
+  ),
+  true,
+);
+assert.equal(
+  await verifyModeratorToken('wrong', moderatorEnv.REVIEWS_MODERATION_TOKEN),
+  false,
+);
+const moderatorUrl = 'https://test/admin/reviews';
+const login = await moderationSession(new Request(moderatorUrl), moderatorEnv);
+assert.equal(login.authenticated, false);
+login.session.set('credential', login.credential);
+login.session.set('expires', Date.now() + 10000);
+const cookie = await login.storage.commitSession(login.session);
+assert.ok(
+  cookie.includes('HttpOnly') &&
+    cookie.includes('Secure') &&
+    cookie.includes('SameSite=Strict'),
+);
+const signedRequest = new Request(moderatorUrl, {
+  headers: {Cookie: cookie.split(';')[0]},
+});
+assert.equal(
+  (await moderationSession(signedRequest, moderatorEnv)).authenticated,
+  true,
+);
+assert.equal(
+  (
+    await moderationSession(signedRequest, {
+      ...moderatorEnv,
+      REVIEWS_MODERATION_TOKEN: 'rotated-token-'.repeat(4),
+    })
+  ).authenticated,
+  false,
+);
+login.session.set('expires', Date.now() - 1);
+const expiredCookie = await login.storage.commitSession(login.session);
+assert.equal(
+  (
+    await moderationSession(
+      new Request(moderatorUrl, {
+        headers: {Cookie: expiredCookie.split(';')[0]},
+      }),
+      moderatorEnv,
+    )
+  ).authenticated,
+  false,
+);
+console.warn(
+  'Moderation: token verification, signed secure session, expiry and credential rotation passed.',
+);

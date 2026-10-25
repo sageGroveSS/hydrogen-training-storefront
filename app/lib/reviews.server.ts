@@ -109,6 +109,66 @@ export function createReviewsClient(env: Env) {
         return unavailableReviews();
       }
     },
+    async listModeration(
+      kind: 'review' | 'reply',
+      status: ReviewStatus,
+      page: number,
+    ) {
+      const select =
+        kind === 'review'
+          ? 'id,reviewer_name,title,body,status,created_at,product_handle'
+          : 'id,author_name,body,status,created_at,parent_reply_id,reviews!inner(product_handle,title)';
+      const table = kind === 'review' ? 'reviews' : 'review_replies';
+      const rows = await request<
+        Array<{
+          id: string;
+          reviewer_name?: string;
+          author_name?: string;
+          title?: string;
+          body: string;
+          status: ReviewStatus;
+          created_at: string;
+          product_handle?: string;
+          parent_reply_id?: string;
+          reviews?: {product_handle: string; title: string};
+        }>
+      >(
+        `${table}?select=${select}&status=eq.${status}&order=created_at.desc,id.desc&offset=${(page - 1) * 20}&limit=21`,
+      );
+      return {
+        hasNext: rows.length > 20,
+        items: rows.slice(0, 20).map((row) => ({
+          id: row.id,
+          author: row.reviewer_name ?? row.author_name ?? '',
+          title: row.title ?? row.reviews?.title ?? '',
+          body: row.body,
+          status: row.status,
+          createdAt: row.created_at,
+          productHandle:
+            row.product_handle ?? row.reviews?.product_handle ?? '',
+          parentReplyId: row.parent_reply_id,
+        })),
+      };
+    },
+    async moderate(
+      kind: 'review' | 'reply',
+      id: string,
+      status: ReviewStatus,
+      note: string,
+    ) {
+      try {
+        await rpc('review_moderate', {
+          p_kind: kind,
+          p_id: id,
+          p_status: status,
+          p_note: note,
+        });
+      } catch (error) {
+        if (error instanceof ReviewsError && error.status === 409)
+          return 'Approve the review and parent reply first.';
+        return 'The moderation decision could not be saved. Please retry.';
+      }
+    },
     async takeQuota(bucket: string, limit = 5) {
       return rpc<boolean>('review_take_quota', {
         p_bucket: bucket,
