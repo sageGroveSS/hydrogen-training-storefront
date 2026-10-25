@@ -37,5 +37,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Check collection filters
+        run: npm run check:collection-filters
+
       - name: Build
         run: npm run build

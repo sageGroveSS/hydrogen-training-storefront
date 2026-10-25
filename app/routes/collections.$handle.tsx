@@ -4,10 +4,24 @@ import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductItem} from '~/components/ProductItem';
+import {CollectionFilters} from '~/components/CollectionFilters';
+import {parseCollectionFilters} from '~/lib/collectionFilters';
 import type {ProductItemFragment} from 'storefrontapi.generated';
 
 export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+  return [
+    {
+      title:
+        data?.collection.seo.title ||
+        `${data?.collection.title ?? ''} | Collections`,
+    },
+    {
+      name: 'description',
+      content: data?.collection.seo.description || data?.collection.description,
+    },
+    {tagName: 'link', rel: 'canonical', href: data?.canonicalUrl},
+    ...(data?.filtered ? [{name: 'robots', content: 'noindex,follow'}] : []),
+  ];
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -27,6 +41,8 @@ export async function loader(args: Route.LoaderArgs) {
 async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
   const {handle} = params;
   const {storefront} = context;
+  const url = new URL(request.url);
+  const {filters, sort} = parseCollectionFilters(url.searchParams);
   const paginationVariables = getPaginationVariables(request, {
     pageBy: 8,
   });
@@ -37,7 +53,14 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
 
   const [{collection}] = await Promise.all([
     storefront.query(COLLECTION_QUERY, {
-      variables: {handle, ...paginationVariables},
+      variables: {
+        handle,
+        ...paginationVariables,
+        filters,
+        sortKey: sort.sortKey,
+        reverse: sort.reverse,
+      },
+      cache: storefront.CacheShort(),
       // Add other queries here, so that they are loaded in parallel
     }),
   ]);
@@ -53,6 +76,8 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
 
   return {
     collection,
+    canonicalUrl: `${url.origin}${url.pathname}`,
+    filtered: filters.length > 0 || sort.value !== 'featured',
   };
 }
 
@@ -72,18 +97,25 @@ export default function Collection() {
     <div className="collection">
       <h1>{collection.title}</h1>
       <p className="collection-description">{collection.description}</p>
-      <PaginatedResourceSection<ProductItemFragment>
-        connection={collection.products}
-        resourcesClassName="products-grid"
-      >
-        {({node: product, index}) => (
-          <ProductItem
-            key={product.id}
-            product={product}
-            loading={index < 8 ? 'eager' : undefined}
-          />
+      <CollectionFilters filters={collection.products.filters}>
+        {!collection.products.nodes.length && (
+          <p role="status">
+            No products match these filters. Try clearing a filter.
+          </p>
         )}
-      </PaginatedResourceSection>
+        <PaginatedResourceSection<ProductItemFragment>
+          connection={collection.products}
+          resourcesClassName="products-grid"
+        >
+          {({node: product, index}) => (
+            <ProductItem
+              key={product.id}
+              product={product}
+              loading={index < 8 ? 'eager' : undefined}
+            />
+          )}
+        </PaginatedResourceSection>
+      </CollectionFilters>
       <Analytics.CollectionView
         data={{
           collection: {
@@ -134,18 +166,26 @@ const COLLECTION_QUERY = `#graphql
     $last: Int
     $startCursor: String
     $endCursor: String
+    $filters: [ProductFilter!]
+    $sortKey: ProductCollectionSortKeys
+    $reverse: Boolean
   ) @inContext(country: $country, language: $language) {
     collection(handle: $handle) {
       id
       handle
       title
       description
+      seo { title description }
       products(
         first: $first,
         last: $last,
         before: $startCursor,
         after: $endCursor
+        filters: $filters
+        sortKey: $sortKey
+        reverse: $reverse
       ) {
+        filters { id label type values { id label count input } }
         nodes {
           ...ProductItem
         }

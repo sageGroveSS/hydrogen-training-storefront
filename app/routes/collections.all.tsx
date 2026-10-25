@@ -1,12 +1,21 @@
 import type {Route} from './+types/collections.all';
 import {useLoaderData} from 'react-router';
-import {getPaginationVariables, Image, Money} from '@shopify/hydrogen';
+import {getPaginationVariables} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {ProductItem} from '~/components/ProductItem';
+import {CollectionFilters} from '~/components/CollectionFilters';
+import {
+  CATALOG_SORT_OPTIONS,
+  parseCollectionFilters,
+} from '~/lib/collectionFilters';
 import type {CollectionItemFragment} from 'storefrontapi.generated';
 
-export const meta: Route.MetaFunction = () => {
-  return [{title: `Hydrogen | Products`}];
+export const meta: Route.MetaFunction = ({data}) => {
+  return [
+    {title: 'Products | Collections'},
+    {tagName: 'link', rel: 'canonical', href: data?.canonicalUrl},
+    ...(data?.filtered ? [{name: 'robots', content: 'noindex,follow'}] : []),
+  ];
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -25,17 +34,32 @@ export async function loader(args: Route.LoaderArgs) {
  */
 async function loadCriticalData({context, request}: Route.LoaderArgs) {
   const {storefront} = context;
+  const url = new URL(request.url);
+  const {filters, sort} = parseCollectionFilters(
+    url.searchParams,
+    CATALOG_SORT_OPTIONS,
+  );
   const paginationVariables = getPaginationVariables(request, {
     pageBy: 8,
   });
 
   const [{products}] = await Promise.all([
     storefront.query(CATALOG_QUERY, {
-      variables: {...paginationVariables},
+      variables: {
+        ...paginationVariables,
+        filters,
+        sortKey: sort.sortKey === 'PRICE' ? 'PRICE' : 'RELEVANCE',
+        reverse: sort.reverse,
+      },
+      cache: storefront.CacheShort(),
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
-  return {products};
+  return {
+    products,
+    canonicalUrl: `${url.origin}${url.pathname}`,
+    filtered: filters.length > 0 || sort.value !== 'featured',
+  };
 }
 
 /**
@@ -53,18 +77,28 @@ export default function Collection() {
   return (
     <div className="collection">
       <h1>Products</h1>
-      <PaginatedResourceSection<CollectionItemFragment>
-        connection={products}
-        resourcesClassName="products-grid"
+      <CollectionFilters
+        filters={products.productFilters}
+        sortOptions={CATALOG_SORT_OPTIONS}
       >
-        {({node: product, index}) => (
-          <ProductItem
-            key={product.id}
-            product={product}
-            loading={index < 8 ? 'eager' : undefined}
-          />
+        {!products.nodes.length && (
+          <p role="status">
+            No products match these filters. Try clearing a filter.
+          </p>
         )}
-      </PaginatedResourceSection>
+        <PaginatedResourceSection<CollectionItemFragment>
+          connection={products}
+          resourcesClassName="products-grid"
+        >
+          {({node: product, index}) => (
+            <ProductItem
+              key={product.id}
+              product={product}
+              loading={index < 8 ? 'eager' : undefined}
+            />
+          )}
+        </PaginatedResourceSection>
+      </CollectionFilters>
     </div>
   );
 }
@@ -105,10 +139,14 @@ const CATALOG_QUERY = `#graphql
     $last: Int
     $startCursor: String
     $endCursor: String
+    $filters: [ProductFilter!]
+    $sortKey: SearchSortKeys
+    $reverse: Boolean
   ) @inContext(country: $country, language: $language) {
-    products(first: $first, last: $last, before: $startCursor, after: $endCursor) {
+    products: search(query: "", types: [PRODUCT], first: $first, last: $last, before: $startCursor, after: $endCursor, productFilters: $filters, sortKey: $sortKey, reverse: $reverse) {
+      productFilters { id label type values { id label count input } }
       nodes {
-        ...CollectionItem
+        ...on Product { ...CollectionItem }
       }
       pageInfo {
         hasPreviousPage

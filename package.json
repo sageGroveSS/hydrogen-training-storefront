@@ -17,7 +17,8 @@
     "seed:shopify:media:apply": "node scripts/seed-shopify-media.mjs --apply",
     "seed:shopify:homepage": "node scripts/seed-shopify-homepage.mjs",
     "seed:shopify:homepage:apply": "node scripts/seed-shopify-homepage.mjs --apply",
-    "check:homepage": "node --experimental-strip-types scripts/check-homepage-content.mjs"
+    "check:homepage": "node --experimental-strip-types scripts/check-homepage-content.mjs",
+    "check:collection-filters": "node --experimental-strip-types scripts/check-collection-filters.mjs"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {

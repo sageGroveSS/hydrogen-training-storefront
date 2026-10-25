@@ -57,6 +57,23 @@ The first Supabase migration is in
 `supabase/migrations/202608300001_create_reviews.sql`. Apply it to the Supabase
 project selected for reviews/comments before enabling review submission.
 
+## Collection filters
+
+Collection and catalog pages use Storefront API filters with GET forms, including
+without JavaScript. Filter choices come from the store's configured facets.
+Desktop filters use a sticky sidebar and apply changes after a 350 ms pause.
+On smaller screens, the filter link opens
+a native modal drawer; without JavaScript it reveals the inline GET form instead.
+In Shopify Search & Discovery, enable Product type, Vendor and the product options
+used by the catalog (Color, Material and Size), alongside Availability and Price.
+Shopify ignores filters that have not been enabled; the storefront warns when a
+selected filter is unavailable. See [Shopify's filter setup guide](https://shopify.dev/docs/storefronts/headless/building-with-the-storefront-api/products-collections/filter-products).
+
+Collection pages support featured, best-selling, price, title and newest sorting.
+The all-products catalog uses Shopify search and supports featured and price sorting.
+Run `npm run check:collection-filters` for the
+filter URL and validation checks.
+
 ## GitHub release settings
 
 Pull requests run CI and deploy an Oxygen preview. Production deploys run from
