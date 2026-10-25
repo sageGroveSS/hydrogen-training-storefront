@@ -91,6 +91,22 @@ textarea {
   resize: vertical;
 }
 
+select:not([multiple]):not([size]) {
+  appearance: none;
+  background-image: url('/icons/chevron-down.svg');
+  background-position: right 0.875rem center;
+  background-repeat: no-repeat;
+  background-size: 1rem;
+  padding-right: 2.75rem;
+}
+
+@media (forced-colors: active) {
+  select:not([multiple]):not([size]) {
+    appearance: auto;
+    background-image: none;
+  }
+}
+
 button,
 .button,
 input[type="submit"] {
