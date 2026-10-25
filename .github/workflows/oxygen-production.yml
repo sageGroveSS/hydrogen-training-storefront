@@ -17,6 +17,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy production
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 30
     runs-on: ubuntu-latest
     environment:
@@ -33,6 +34,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Build
         run: npm run build

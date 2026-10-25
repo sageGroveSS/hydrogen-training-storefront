@@ -57,6 +57,23 @@ The first Supabase migration is in
 `supabase/migrations/202608300001_create_reviews.sql`. Apply it to the Supabase
 project selected for reviews/comments before enabling review submission.
 
+## GitHub release settings
+
+Pull requests run CI and deploy an Oxygen preview. Production deploys run from
+`main`, including manual runs, and pass lint, typecheck, and build before deploying.
+Keep the `production` environment's deployment branch policy restricted to `main`.
+
+Configure these repository settings with a GitHub administrator account:
+
+- Protect `main`: require a pull request and the `Lint, typecheck, and build`
+  status check, with the branch up to date before merging.
+- Apply protection to administrators, and block force pushes and branch deletion.
+- Use squash merges and enable automatic deletion of merged topic branches.
+
+When stacking pull requests, retarget the child to `main` after the parent merges.
+Do not merge into an already merged topic
+branch: those commits will not reach `main`.
+
 ## Setup for using Customer Account API (`/account` section)
 
 Follow step 1 and 2 of <https://shopify.dev/docs/custom-storefronts/building-with-the-customer-account-api/hydrogen#step-1-set-up-a-public-domain-for-local-development>
