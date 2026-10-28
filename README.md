@@ -78,6 +78,28 @@ database regression checks, including more than 1,000 reviews, reply depth,
 moderation, privileges and quotas. Its fixtures are rolled back. Demo data is
 never generated automatically during builds or deployment.
 
+## Customer account and email preferences
+
+The account has a shared responsive layout for orders, profile, addresses and
+`/account/preferences`. Account responses use `private, no-store` and `noindex`.
+Profile, address and preference forms submit native POST requests with same-origin
+and body-size checks. Address updates and deletions verify that the address belongs
+to the current customer. Names, address fields and preference values are validated
+server-side; mutation errors retain the form instead of reporting success.
+
+Email preferences use the existing customer boolean metafields
+`custom.email_sale_alerts` and `custom.email_back_in_stock`, with Customer Account
+access `READ_WRITE` and Storefront access `NONE`. Missing values default to false;
+existing choices are preserved. Both choices save atomically using the current
+customer ID and metafield version checks. A stale form returns a conflict and asks
+the customer to reload instead of overwriting a newer choice.
+
+These fields store category preferences. They do not send email or change Shopify's
+native marketing subscription status. No additional secrets or migrations are
+required. Run `npm run check:account` for preferences, ownership, validation,
+request security and cache-header checks. Real account writes remain part of the
+deferred customer login acceptance test.
+
 ## Wishlist
 
 The heart buttons and `/wishlist` use product IDs. Guests keep up to 100 IDs in
