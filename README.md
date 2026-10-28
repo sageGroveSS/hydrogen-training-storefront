@@ -78,6 +78,29 @@ database regression checks, including more than 1,000 reviews, reply depth,
 moderation, privileges and quotas. Its fixtures are rolled back. Demo data is
 never generated automatically during builds or deployment.
 
+## Wishlist
+
+The heart buttons and `/wishlist` use product IDs. Guests keep up to 100 IDs in
+browser localStorage (`storefront:wishlist`). Signing in merges those IDs into
+the customer's Shopify `custom.wishlist` metafield; local IDs are cleared only
+after the account confirms the merge. Signed-in lists are never stored locally.
+Writes use the authenticated customer's ID and compare-and-set retries to avoid
+overwriting changes from another window. Failed sync preserves the guest list.
+Unavailable products can still be removed from the list.
+
+The customer metafield definition must exist before use: namespace `custom`, key
+`wishlist`, type `list.product_reference`, Customer Account access `READ_WRITE`,
+Storefront access `NONE`. The existing Shopify seed defines this field; do not
+rerun the seed to enable wishlist. The project's store already has this definition.
+The Customer Account client needs customer read/write scopes. No Admin token is
+used by the running storefront. `/api/wishlist` responses are private and no-store.
+`/account/wishlist` redirects to the shared guest/account wishlist page.
+
+Wishlist requires JavaScript and browser storage; shopping and checkout retain
+their existing no-JavaScript paths. Run `npm run check:wishlist` for validation,
+limits, merges, customer ownership, conflict retries and failure checks. A real
+customer login and cross-device sync still need the deferred login acceptance test.
+
 ## Collection filters
 
 Collection and catalog pages use Storefront API filters with GET forms, including
