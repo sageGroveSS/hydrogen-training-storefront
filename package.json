@@ -20,7 +20,8 @@
     "check:homepage": "node --experimental-strip-types scripts/check-homepage-content.mjs",
     "check:collection-filters": "node --experimental-strip-types scripts/check-collection-filters.mjs",
     "check:reviews": "node --experimental-strip-types scripts/check-reviews.mjs",
-    "check:wishlist": "node --experimental-strip-types scripts/check-wishlist.mjs"
+    "check:wishlist": "node --experimental-strip-types scripts/check-wishlist.mjs",
+    "check:account": "node --experimental-strip-types scripts/check-account.mjs"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {

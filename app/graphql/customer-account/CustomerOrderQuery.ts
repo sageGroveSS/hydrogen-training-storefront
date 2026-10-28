@@ -4,17 +4,6 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
     amount
     currencyCode
   }
-  fragment DiscountApplication on DiscountApplication {
-    value {
-      __typename
-      ... on MoneyV2 {
-        ...OrderMoney
-      }
-      ... on PricingPercentageValue {
-        percentage
-      }
-    }
-  }
   fragment OrderLineItemFull on LineItem {
     id
     title
@@ -22,15 +11,7 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
     price {
       ...OrderMoney
     }
-    discountAllocations {
-      allocatedAmount {
-        ...OrderMoney
-      }
-      discountApplication {
-        ...DiscountApplication
-      }
-    }
-    totalDiscount {
+    totalPrice {
       ...OrderMoney
     }
     image {
@@ -49,10 +30,8 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
     statusPageUrl
     fulfillmentStatus
     processedAt
-    fulfillments(first: 1) {
-      nodes {
-        status
-      }
+    totalShipping {
+      ...OrderMoney
     }
     totalTax {
       ...OrderMoney
@@ -64,14 +43,7 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
       ...OrderMoney
     }
     shippingAddress {
-      name
       formatted(withName: true)
-      formattedArea
-    }
-    discountApplications(first: 100) {
-      nodes {
-        ...DiscountApplication
-      }
     }
     lineItems(first: 100) {
       nodes {

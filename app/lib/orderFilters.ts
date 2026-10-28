@@ -5,6 +5,7 @@ export const ORDER_FILTER_FIELDS = {
   NAME: 'name',
   CONFIRMATION_NUMBER: 'confirmation_number',
 } as const;
+export const ORDER_FILTER_MAX_LENGTH = 64;
 
 /**
  * Parameters for filtering customer orders, see: https://shopify.dev/docs/api/customer/latest/queries/customer#returns-Customer.fields.orders.arguments.query
@@ -72,6 +73,13 @@ export function buildOrderSearchQuery(
 export function parseOrderFilters(
   searchParams: URLSearchParams,
 ): OrderFilterParams {
+  for (const field of Object.values(ORDER_FILTER_FIELDS)) {
+    if (
+      searchParams.getAll(field).length > 1 ||
+      (searchParams.get(field)?.length ?? 0) > ORDER_FILTER_MAX_LENGTH
+    )
+      throw new RangeError('Order filters must be at most 64 characters.');
+  }
   const filters: OrderFilterParams = {};
 
   const name = searchParams.get(ORDER_FILTER_FIELDS.NAME);

@@ -1,6 +1,4 @@
 import type {CustomerFragment} from 'customer-accountapi.generated';
-import type {CustomerUpdateInput} from '@shopify/hydrogen/customer-account-api-types';
-import {CUSTOMER_UPDATE_MUTATION} from '~/graphql/customer-account/CustomerUpdateMutation';
 import {
   data,
   Form,
@@ -9,125 +7,84 @@ import {
   useOutletContext,
 } from 'react-router';
 import type {Route} from './+types/account.profile';
-
-export type ActionResponse = {
-  error: string | null;
-  customer: CustomerFragment | null;
-};
-
-export const meta: Route.MetaFunction = () => {
-  return [{title: 'Profile'}];
-};
-
+import {useState} from 'react';
+import {accountForm, accountFailure, saveProfile} from '~/lib/account.server';
+export {accountHeaders as headers} from '~/lib/account';
+export const meta = () => [{title: 'Profile'}];
 export async function loader({context}: Route.LoaderArgs) {
   await context.customerAccount.handleAuthStatus();
-
   return {};
 }
-
 export async function action({request, context}: Route.ActionArgs) {
-  const {customerAccount} = context;
-
-  if (request.method !== 'PUT') {
-    return data({error: 'Method not allowed'}, {status: 405});
-  }
-
-  const form = await request.formData();
-
   try {
-    const customer: CustomerUpdateInput = {};
-    const validInputKeys = ['firstName', 'lastName'] as const;
-    for (const [key, value] of form.entries()) {
-      if (!validInputKeys.includes(key as any)) {
-        continue;
-      }
-      if (typeof value === 'string' && value.length) {
-        customer[key as (typeof validInputKeys)[number]] = value;
-      }
-    }
-
-    // update customer and possibly password
-    const {data, errors} = await customerAccount.mutate(
-      CUSTOMER_UPDATE_MUTATION,
-      {
-        variables: {
-          customer,
-          language: customerAccount.i18n.language,
-        },
-      },
-    );
-
-    if (errors?.length) {
-      throw new Error(errors[0].message);
-    }
-
-    if (!data?.customerUpdate?.customer) {
-      throw new Error('Customer profile update failed.');
-    }
-
-    return {
-      error: null,
-      customer: data?.customerUpdate?.customer,
-    };
-  } catch (error: any) {
-    return data(
-      {error: error.message, customer: null},
-      {
-        status: 400,
-      },
-    );
+    const form = await accountForm(request, context.customerAccount);
+    await saveProfile(context.customerAccount, form);
+    return data({error: null, status: 200});
+  } catch (error) {
+    const failure = accountFailure(error);
+    return data(failure, {status: failure.status});
   }
 }
-
 export default function AccountProfile() {
-  const account = useOutletContext<{customer: CustomerFragment}>();
-  const {state} = useNavigation();
-  const action = useActionData<ActionResponse>();
-  const customer = action?.customer ?? account?.customer;
-
+  const {customer} = useOutletContext<{customer: CustomerFragment}>();
+  const result = useActionData<typeof action>();
+  const pending = useNavigation().state !== 'idle';
+  const [edit, setEdit] = useState<{result: typeof result} | null>(null);
+  const edited = edit !== null && edit.result === result;
   return (
-    <div className="account-profile">
-      <h2>My profile</h2>
-      <br />
-      <Form method="PUT">
-        <legend>Personal information</legend>
-        <fieldset>
-          <label htmlFor="firstName">First name</label>
-          <input
-            id="firstName"
-            name="firstName"
-            type="text"
-            autoComplete="given-name"
-            placeholder="First name"
-            aria-label="First name"
-            defaultValue={customer.firstName ?? ''}
-            minLength={2}
-          />
-          <label htmlFor="lastName">Last name</label>
-          <input
-            id="lastName"
-            name="lastName"
-            type="text"
-            autoComplete="family-name"
-            placeholder="Last name"
-            aria-label="Last name"
-            defaultValue={customer.lastName ?? ''}
-            minLength={2}
-          />
-        </fieldset>
-        {action?.error ? (
-          <p>
-            <mark>
-              <small>{action.error}</small>
-            </mark>
-          </p>
-        ) : (
-          <br />
-        )}
-        <button type="submit" disabled={state !== 'idle'}>
-          {state !== 'idle' ? 'Updating' : 'Update'}
-        </button>
+    <section className="account-panel">
+      <h2>Profile</h2>
+      <Form
+        method="post"
+        className="account-form"
+        key={`${customer.firstName}:${customer.lastName}`}
+        onChange={() => setEdit({result})}
+      >
+        <div className="account-form-grid">
+          <label>
+            First name
+            <input
+              name="firstName"
+              autoComplete="given-name"
+              defaultValue={customer.firstName ?? ''}
+              maxLength={80}
+              disabled={pending}
+            />
+          </label>
+          <label>
+            Last name
+            <input
+              name="lastName"
+              autoComplete="family-name"
+              defaultValue={customer.lastName ?? ''}
+              maxLength={80}
+              disabled={pending}
+            />
+          </label>
+        </div>
+        <div className="account-form-footer">
+          <div className="account-form-status">
+            {!pending && edited ? (
+              <p role="status">Unsaved changes</p>
+            ) : !pending && result?.error ? (
+              <p role="alert" className="account-error">
+                {result.error}
+              </p>
+            ) : (
+              !pending &&
+              result &&
+              !edited && (
+                <p role="status" className="account-success">
+                  Profile saved.
+                </p>
+              )
+            )}
+          </div>
+          <button type="submit" disabled={pending}>
+            {pending ? 'Saving…' : 'Save profile'}
+          </button>
+        </div>
       </Form>
-    </div>
+    </section>
   );
 }
