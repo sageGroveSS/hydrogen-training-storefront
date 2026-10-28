@@ -1,96 +1,64 @@
-import {redirect, useLoaderData} from 'react-router';
+import {Link, redirect, useLoaderData} from 'react-router';
 import type {Route} from './+types/account.orders.$id';
 import {Money, Image} from '@shopify/hydrogen';
-import type {
-  OrderLineItemFullFragment,
-  OrderQuery,
-} from 'customer-accountapi.generated';
+import type {OrderLineItemFullFragment} from 'customer-accountapi.generated';
 import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer-account/CustomerOrderQuery';
-
-export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Order ${data?.order?.name}`}];
-};
-
+export {accountHeaders as headers} from '~/lib/account';
+export const meta: Route.MetaFunction = ({data}) => [
+  {title: data?.order ? `Order ${data.order.name}` : 'Order'},
+];
 export async function loader({params, context}: Route.LoaderArgs) {
-  const {customerAccount} = context;
-  if (!params.id) {
-    return redirect('/account/orders');
+  if (!params.id) return redirect('/account/orders');
+  let orderId: string;
+  try {
+    orderId = atob(params.id);
+  } catch {
+    throw new Response('Order not found.', {status: 404});
   }
-
-  const orderId = atob(params.id);
-  const {data, errors}: {data: OrderQuery; errors?: Array<{message: string}>} =
-    await customerAccount.query(CUSTOMER_ORDER_QUERY, {
-      variables: {
-        orderId,
-        language: customerAccount.i18n.language,
-      },
-    });
-
-  if (errors?.length || !data?.order) {
-    throw new Error('Order not found');
-  }
-
-  const {order} = data;
-
-  // Extract line items directly from nodes array
-  const lineItems = order.lineItems.nodes;
-
-  // Extract discount applications directly from nodes array
-  const discountApplications = order.discountApplications.nodes;
-
-  // Get fulfillment status from first fulfillment node
-  const fulfillmentStatus = order.fulfillments.nodes[0]?.status ?? 'N/A';
-
-  // Get first discount value with proper type checking
-  const firstDiscount = discountApplications[0]?.value;
-
-  // Type guard for MoneyV2 discount
-  const discountValue =
-    firstDiscount?.__typename === 'MoneyV2'
-      ? (firstDiscount as Extract<
-          typeof firstDiscount,
-          {__typename: 'MoneyV2'}
-        >)
-      : null;
-
-  // Type guard for percentage discount
-  const discountPercentage =
-    firstDiscount?.__typename === 'PricingPercentageValue'
-      ? (
-          firstDiscount as Extract<
-            typeof firstDiscount,
-            {__typename: 'PricingPercentageValue'}
-          >
-        ).percentage
-      : null;
-
-  return {
-    order,
-    lineItems,
-    discountValue,
-    discountPercentage,
-    fulfillmentStatus,
-  };
+  if (!/^gid:\/\/shopify\/Order\/[1-9]\d*$/.test(orderId))
+    throw new Response('Order not found.', {status: 404});
+  const result = await context.customerAccount.query(CUSTOMER_ORDER_QUERY, {
+    variables: {orderId, language: context.customerAccount.i18n.language},
+  });
+  if (result.errors?.length || !result.data?.order)
+    throw new Response('Order not found.', {status: 404});
+  return {order: result.data.order};
 }
-
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The horizontal order table must be keyboard-scrollable. */
 export default function OrderRoute() {
-  const {
-    order,
-    lineItems,
-    discountValue,
-    discountPercentage,
-    fulfillmentStatus,
-  } = useLoaderData<typeof loader>();
+  const {order} = useLoaderData<typeof loader>();
   return (
-    <div className="account-order">
-      <h2>Order {order.name}</h2>
-      <p>Placed on {new Date(order.processedAt!).toDateString()}</p>
+    <section className="account-order">
+      <Link to="/account/orders" className="account-back">
+        ← All orders
+      </Link>
+      <div className="account-section-heading">
+        <h2>Order {order.name}</h2>
+        <span
+          className="account-badge"
+          data-status={order.fulfillmentStatus.toLowerCase()}
+        >
+          {order.fulfillmentStatus.replaceAll('_', ' ').toLowerCase()}
+        </span>
+      </div>
+      <p className="account-description">
+        Placed on{' '}
+        {new Date(order.processedAt).toLocaleDateString('en', {
+          timeZone: 'UTC',
+        })}
+      </p>
       {order.confirmationNumber && (
-        <p>Confirmation: {order.confirmationNumber}</p>
+        <p className="account-description">
+          Confirmation: {order.confirmationNumber}
+        </p>
       )}
-      <br />
-      <div>
-        <table>
+      <div
+        className="account-table-scroll"
+        role="region"
+        aria-label="Order items"
+        tabIndex={0}
+      >
+        <table className="account-order-table">
           <thead>
             <tr>
               <th scope="col">Product</th>
@@ -100,123 +68,112 @@ export default function OrderRoute() {
             </tr>
           </thead>
           <tbody>
-            {lineItems.map((lineItem, lineItemIndex) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <OrderLineRow key={lineItemIndex} lineItem={lineItem} />
+            {order.lineItems.nodes.map((item) => (
+              <OrderLineRow key={item.id} lineItem={item} />
             ))}
           </tbody>
-          <tfoot>
-            {((discountValue && discountValue.amount) ||
-              discountPercentage) && (
-              <tr>
-                <th scope="row" colSpan={3}>
-                  <p>Discounts</p>
-                </th>
-                <th scope="row">
-                  <p>Discounts</p>
-                </th>
-                <td>
-                  {discountPercentage ? (
-                    <span>-{discountPercentage}% OFF</span>
-                  ) : (
-                    discountValue && <Money data={discountValue!} />
-                  )}
-                </td>
-              </tr>
-            )}
-            <tr>
-              <th scope="row" colSpan={3}>
-                <p>Subtotal</p>
-              </th>
-              <th scope="row">
-                <p>Subtotal</p>
-              </th>
-              <td>
-                <Money data={order.subtotal!} />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" colSpan={3}>
-                Tax
-              </th>
-              <th scope="row">
-                <p>Tax</p>
-              </th>
-              <td>
-                <Money data={order.totalTax!} />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" colSpan={3}>
-                Total
-              </th>
-              <th scope="row">
-                <p>Total</p>
-              </th>
-              <td>
-                <Money data={order.totalPrice!} />
-              </td>
-            </tr>
-          </tfoot>
         </table>
-        <div>
-          <h3>Shipping Address</h3>
-          {order?.shippingAddress ? (
-            <address>
-              <p>{order.shippingAddress.name}</p>
-              {order.shippingAddress.formatted ? (
-                <p>{order.shippingAddress.formatted}</p>
-              ) : (
-                ''
-              )}
-              {order.shippingAddress.formattedArea ? (
-                <p>{order.shippingAddress.formattedArea}</p>
-              ) : (
-                ''
-              )}
-            </address>
-          ) : (
-            <p>No shipping address defined</p>
-          )}
-          <h3>Status</h3>
-          <div>
-            <p>{fulfillmentStatus}</p>
-          </div>
-        </div>
       </div>
-      <br />
-      <p>
-        <a target="_blank" href={order.statusPageUrl} rel="noreferrer">
-          View Order Status →
-        </a>
-      </p>
-    </div>
-  );
-}
-
-function OrderLineRow({lineItem}: {lineItem: OrderLineItemFullFragment}) {
-  return (
-    <tr key={lineItem.id}>
-      <td>
-        <div>
-          {lineItem?.image && (
+      <ul className="account-order-mobile" aria-label="Order items">
+        {order.lineItems.nodes.map((item) => (
+          <li key={item.id}>
+            <OrderProduct lineItem={item} />
+            <dl className="account-mobile-money">
+              <div>
+                <dt>Unit price</dt>
+                <dd>{item.price ? <Money data={item.price} /> : '—'}</dd>
+              </div>
+              <div>
+                <dt>Quantity</dt>
+                <dd>{item.quantity}</dd>
+              </div>
+              <div>
+                <dt>Total</dt>
+                <dd>
+                  {item.totalPrice ? <Money data={item.totalPrice} /> : '—'}
+                </dd>
+              </div>
+            </dl>
+          </li>
+        ))}
+      </ul>
+      <div className="account-order-summary">
+        <section className="account-panel">
+          <h3>Shipping address</h3>
+          {order.shippingAddress ? (
+            <address>{order.shippingAddress.formatted.join('\n')}</address>
+          ) : (
+            <p>No shipping address.</p>
+          )}
+          <a href={order.statusPageUrl} target="_blank" rel="noreferrer">
+            Track order ↗
+          </a>
+        </section>
+        <dl className="account-panel account-totals">
+          {order.subtotal && (
             <div>
-              <Image data={lineItem.image} width={96} height={96} />
+              <dt>Subtotal</dt>
+              <dd>
+                <Money data={order.subtotal} />
+              </dd>
             </div>
           )}
           <div>
-            <p>{lineItem.title}</p>
-            <small>{lineItem.variantTitle}</small>
+            <dt>Shipping</dt>
+            <dd>
+              <Money data={order.totalShipping} />
+            </dd>
           </div>
-        </div>
-      </td>
+          {order.totalTax && (
+            <div>
+              <dt>Tax</dt>
+              <dd>
+                <Money data={order.totalTax} />
+              </dd>
+            </div>
+          )}
+          <div className="account-grand-total">
+            <dt>Total</dt>
+            <dd>
+              <Money data={order.totalPrice} />
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+  );
+}
+/* eslint-enable jsx-a11y/no-noninteractive-tabindex */
+function OrderLineRow({lineItem}: {lineItem: OrderLineItemFullFragment}) {
+  return (
+    <tr>
       <td>
-        <Money data={lineItem.price!} />
+        <OrderProduct lineItem={lineItem} />
       </td>
+      <td>{lineItem.price ? <Money data={lineItem.price} /> : '—'}</td>
       <td>{lineItem.quantity}</td>
       <td>
-        <Money data={lineItem.totalDiscount!} />
+        {lineItem.totalPrice ? <Money data={lineItem.totalPrice} /> : '—'}
       </td>
     </tr>
+  );
+}
+
+function OrderProduct({lineItem}: {lineItem: OrderLineItemFullFragment}) {
+  return (
+    <div className="account-order-product">
+      {lineItem.image && (
+        <Image
+          data={lineItem.image}
+          width={72}
+          height={72}
+          alt={lineItem.image.altText || lineItem.title}
+        />
+      )}
+      <div>
+        <strong>{lineItem.title}</strong>
+        {lineItem.variantTitle && <p>{lineItem.variantTitle}</p>}
+      </div>
+    </div>
   );
 }

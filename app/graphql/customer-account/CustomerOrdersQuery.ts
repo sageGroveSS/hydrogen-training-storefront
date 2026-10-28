@@ -7,11 +7,6 @@ export const ORDER_ITEM_FRAGMENT = `#graphql
     }
     financialStatus
     fulfillmentStatus
-    fulfillments(first: 1) {
-      nodes {
-        status
-      }
-    }
     id
     number
     confirmationNumber

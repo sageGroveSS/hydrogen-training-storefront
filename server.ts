@@ -1,6 +1,7 @@
 import * as serverBuild from 'virtual:react-router/server-build';
 import {createRequestHandler, storefrontRedirect} from '@shopify/hydrogen';
 import {createHydrogenRouterContext} from '~/lib/context';
+import {ACCOUNT_PRIVATE_HEADERS, isAccountPath} from '~/lib/account';
 
 /**
  * Export a fetch handler in module format.
@@ -11,6 +12,7 @@ export default {
     env: Env,
     executionContext: ExecutionContext,
   ): Promise<Response> {
+    const accountRequest = isAccountPath(new URL(request.url).pathname);
     try {
       const hydrogenContext = await createHydrogenRouterContext(
         request,
@@ -29,6 +31,10 @@ export default {
       });
 
       const response = await handleRequest(request);
+      if (accountRequest) {
+        for (const [name, value] of Object.entries(ACCOUNT_PRIVATE_HEADERS))
+          response.headers.set(name, value);
+      }
 
       if (hydrogenContext.session.isPending) {
         response.headers.append(
@@ -37,7 +43,7 @@ export default {
         );
       }
 
-      if (response.status === 404) {
+      if (response.status === 404 && !accountRequest) {
         /**
          * Check for redirects only when there's a 404 from the app.
          * If the redirect doesn't exist, then `storefrontRedirect`
@@ -53,7 +59,10 @@ export default {
       return response;
     } catch (error) {
       console.error(error);
-      return new Response('An unexpected error occurred', {status: 500});
+      return new Response('An unexpected error occurred', {
+        status: 500,
+        headers: accountRequest ? ACCOUNT_PRIVATE_HEADERS : undefined,
+      });
     }
   },
 };
