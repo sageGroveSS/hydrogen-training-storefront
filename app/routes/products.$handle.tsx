@@ -13,6 +13,7 @@ import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {ProductReviews} from '~/components/ProductReviews';
+import {WishlistButton} from '~/components/Wishlist';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 
 import {readReviewForm, reviewClientHash} from '~/lib/reviews.server';
@@ -191,6 +192,7 @@ export default function Product() {
       <ProductImage image={selectedVariant?.image} />
       <div className="product-main">
         <h1>{title}</h1>
+        <WishlistButton id={product.id} title={title} />
         <ProductPrice
           price={selectedVariant?.price}
           compareAtPrice={selectedVariant?.compareAtPrice}

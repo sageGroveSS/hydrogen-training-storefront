@@ -1442,6 +1442,80 @@ export type ConfiguratorProductsQuery = {
   >;
 };
 
+export type WishlistProductsQueryVariables = StorefrontAPI.Exact<{
+  ids:
+    | Array<StorefrontAPI.Scalars['ID']['input']>
+    | StorefrontAPI.Scalars['ID']['input'];
+  country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
+  language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
+}>;
+
+export type WishlistProductsQuery = {
+  nodes: Array<
+    StorefrontAPI.Maybe<
+      | {
+          __typename:
+            | 'AppliedGiftCard'
+            | 'Article'
+            | 'Blog'
+            | 'Cart'
+            | 'CartLine'
+            | 'Collection'
+            | 'Comment'
+            | 'Company'
+            | 'CompanyContact'
+            | 'CompanyLocation'
+            | 'ComponentizableCartLine'
+            | 'ExternalVideo'
+            | 'GenericFile'
+            | 'Location'
+            | 'MailingAddress'
+            | 'Market'
+            | 'MediaImage'
+            | 'MediaPresentation'
+            | 'Menu'
+            | 'MenuItem';
+        }
+      | {
+          __typename:
+            | 'Metafield'
+            | 'Metaobject'
+            | 'Model3d'
+            | 'Order'
+            | 'Page'
+            | 'ProductOption'
+            | 'ProductOptionValue'
+            | 'ProductVariant'
+            | 'Shop'
+            | 'ShopPayInstallmentsFinancingPlan'
+            | 'ShopPayInstallmentsFinancingPlanTerm'
+            | 'ShopPayInstallmentsProductVariantPricing'
+            | 'ShopPolicy'
+            | 'TaxonomyCategory'
+            | 'UrlRedirect'
+            | 'Video';
+        }
+      | ({__typename: 'Product'} & Pick<
+          StorefrontAPI.Product,
+          'id' | 'handle' | 'title'
+        > & {
+            featuredImage?: StorefrontAPI.Maybe<
+              Pick<
+                StorefrontAPI.Image,
+                'id' | 'altText' | 'url' | 'width' | 'height'
+              >
+            >;
+            priceRange: {
+              minVariantPrice: Pick<
+                StorefrontAPI.MoneyV2,
+                'amount' | 'currencyCode'
+              >;
+            };
+          })
+    >
+  >;
+};
+
 export type ArticleQueryVariables = StorefrontAPI.Exact<{
   articleHandle: StorefrontAPI.Scalars['String']['input'];
   blogHandle: StorefrontAPI.Scalars['String']['input'];
@@ -2315,6 +2389,10 @@ interface GeneratedQueryTypes {
   '#graphql\n  query ConfiguratorProducts($ids: [ID!]!, $country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    nodes(ids: $ids) { __typename ... on Product { ...ConfiguratorProduct } }\n  }\n  #graphql\n  fragment ConfiguratorProduct on Product {\n    ...HomeProduct\n    options { name optionValues { name } }\n    variants(first: 100) {\n      nodes {\n        id availableForSale\n        selectedOptions { name value }\n        price { amount currencyCode }\n        image { id url altText width height }\n      }\n      pageInfo { hasNextPage }\n    }\n  }\n\n  #graphql\n  fragment HomeProduct on Product {\n    id title handle\n    featuredImage { id url altText width height }\n    priceRange { minVariantPrice { amount currencyCode } }\n  }\n\n': {
     return: ConfiguratorProductsQuery;
     variables: ConfiguratorProductsQueryVariables;
+  };
+  '#graphql\n  query WishlistProducts($ids: [ID!]!, $country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    nodes(ids: $ids) {\n      __typename\n      ... on Product {\n        id\n        handle\n        title\n        featuredImage { id altText url width height }\n        priceRange { minVariantPrice { amount currencyCode } }\n      }\n    }\n  }\n': {
+    return: WishlistProductsQuery;
+    variables: WishlistProductsQueryVariables;
   };
   '#graphql\n  query Article(\n    $articleHandle: String!\n    $blogHandle: String!\n    $country: CountryCode\n    $language: LanguageCode\n  ) @inContext(language: $language, country: $country) {\n    blog(handle: $blogHandle) {\n      handle\n      articleByHandle(handle: $articleHandle) {\n        handle\n        title\n        contentHtml\n        publishedAt\n        author: authorV2 {\n          name\n        }\n        image {\n          id\n          altText\n          url\n          width\n          height\n        }\n        seo {\n          description\n          title\n        }\n      }\n    }\n  }\n': {
     return: ArticleQuery;

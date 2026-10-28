@@ -83,6 +83,10 @@ function AccountMenu() {
         &nbsp; Addresses &nbsp;
       </NavLink>
       &nbsp;|&nbsp;
+      <NavLink to="/wishlist" style={isActiveStyle}>
+        Wishlist
+      </NavLink>
+      &nbsp;|&nbsp;
       <Logout />
     </nav>
   );

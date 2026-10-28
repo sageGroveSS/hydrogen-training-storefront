@@ -43,5 +43,8 @@ jobs:
       - name: Check reviews
         run: npm run check:reviews
 
+      - name: Check wishlist
+        run: npm run check:wishlist
+
       - name: Build
         run: npm run build

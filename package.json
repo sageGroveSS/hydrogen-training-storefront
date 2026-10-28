@@ -19,7 +19,8 @@
     "seed:shopify:homepage:apply": "node scripts/seed-shopify-homepage.mjs --apply",
     "check:homepage": "node --experimental-strip-types scripts/check-homepage-content.mjs",
     "check:collection-filters": "node --experimental-strip-types scripts/check-collection-filters.mjs",
-    "check:reviews": "node --experimental-strip-types scripts/check-reviews.mjs"
+    "check:reviews": "node --experimental-strip-types scripts/check-reviews.mjs",
+    "check:wishlist": "node --experimental-strip-types scripts/check-wishlist.mjs"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {
