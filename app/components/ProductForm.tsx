@@ -1,3 +1,4 @@
+import {Fragment} from 'react';
 import {Link, useNavigate} from 'react-router';
 import {type MappedProductOptions} from '@shopify/hydrogen';
 import type {
@@ -19,6 +20,9 @@ export function ProductForm({
   const {open} = useAside();
   return (
     <div className="product-form">
+      <noscript>
+        <style>{`.product-options-grid button { display: none; }`}</style>
+      </noscript>
       {productOptions.map((option) => {
         // If there is only a single value in the option values, don't display the option
         if (option.optionValues.length === 1) return null;
@@ -66,27 +70,42 @@ export function ProductForm({
                   // the variant so that SEO bots do not index these as
                   // duplicated links
                   return (
-                    <button
-                      type="button"
-                      className={`product-options-item${
-                        exists && !selected ? ' link' : ''
-                      }`}
-                      aria-pressed={selected}
-                      data-available={available ? 'true' : 'false'}
-                      data-selected={selected ? 'true' : 'false'}
-                      key={option.name + name}
-                      disabled={!exists}
-                      onClick={() => {
-                        if (!selected) {
-                          void navigate(`?${variantUriQuery}`, {
-                            replace: true,
-                            preventScrollReset: true,
-                          });
-                        }
-                      }}
-                    >
-                      <ProductOptionSwatch swatch={swatch} name={name} />
-                    </button>
+                    <Fragment key={option.name + name}>
+                      <button
+                        type="button"
+                        className={`product-options-item${
+                          exists && !selected ? ' link' : ''
+                        }`}
+                        aria-pressed={selected}
+                        data-available={available ? 'true' : 'false'}
+                        data-selected={selected ? 'true' : 'false'}
+                        disabled={!exists}
+                        onClick={() => {
+                          if (!selected) {
+                            void navigate(`?${variantUriQuery}`, {
+                              replace: true,
+                              preventScrollReset: true,
+                            });
+                          }
+                        }}
+                      >
+                        <ProductOptionSwatch swatch={swatch} name={name} />
+                      </button>
+                      <noscript>
+                        {exists && (
+                          <a
+                            href={`?${variantUriQuery}`}
+                            rel="nofollow"
+                            className="product-options-item"
+                            aria-current={selected ? 'true' : undefined}
+                            data-available={available ? 'true' : 'false'}
+                            data-selected={selected ? 'true' : 'false'}
+                          >
+                            <ProductOptionSwatch swatch={swatch} name={name} />
+                          </a>
+                        )}
+                      </noscript>
+                    </Fragment>
                   );
                 }
               })}

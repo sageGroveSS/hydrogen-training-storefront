@@ -94,6 +94,9 @@ export function InteractiveLookbook({content, headingId}: Props) {
   if (!active) return null;
   return (
     <section className="interactive-lookbook" aria-labelledby={headingId}>
+      <noscript>
+        <style>{`.lookbook-scenes { display: none; }`}</style>
+      </noscript>
       <div className="lookbook-heading">
         <div>
           <p className="section-kicker">{content.kicker}</p>
