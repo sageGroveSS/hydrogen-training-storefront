@@ -6,7 +6,7 @@ export const HOME_PRODUCT_FRAGMENT = `#graphql
   }
 ` as const;
 
-export const HOMEPAGE_QUERY = `#graphql
+export const CONTENT_FRAGMENTS = `#graphql
   fragment HomeImageField on MetaobjectField {
     reference {
       __typename
@@ -52,18 +52,25 @@ export const HOMEPAGE_QUERY = `#graphql
       references(first: 6) { nodes { __typename ... on Metaobject { ...HomeScene } } }
     }
   }
-  query HomepageContent($country: CountryCode, $language: LanguageCode)
-    @inContext(country: $country, language: $language) {
-    homepage: metaobject(handle: {type: "storefront_home", handle: "home"}) {
-      id fields { key value }
-      sections: field(key: "sections") {
-        references(first: 30) {
-          nodes { __typename ... on Metaobject { ...HomeSection } }
-        }
+  fragment SectionContent on Metaobject {
+    id fields { key value }
+    sections: field(key: "sections") {
+      references(first: 30) {
+        nodes { __typename ... on Metaobject { ...HomeSection } }
       }
     }
   }
   ${HOME_PRODUCT_FRAGMENT}
+` as const;
+
+export const HOMEPAGE_QUERY = `#graphql
+  query HomepageContent($country: CountryCode, $language: LanguageCode)
+    @inContext(country: $country, language: $language) {
+    homepage: metaobject(handle: {type: "storefront_home", handle: "home"}) {
+      ...SectionContent
+    }
+  }
+  ${CONTENT_FRAGMENTS}
 ` as const;
 
 export const CONFIGURATOR_PRODUCT_FRAGMENT = `#graphql

@@ -31,13 +31,22 @@ export function HomepageSections({
   page,
   configuratorProducts,
   source,
+  hasPageHeading = false,
 }: {
   page: HomepageContent;
   configuratorProducts: Promise<ConfiguratorProductsQuery | null>;
   source: 'metaobject' | 'demo';
+  hasPageHeading?: boolean;
 }) {
   return (
-    <div className="home storefront-home" data-content-source={source}>
+    <div
+      className="home storefront-home"
+      data-content-source={source}
+      data-has-configurator={
+        page.sections.some((section) => section.kind === 'configurator') ||
+        undefined
+      }
+    >
       {page.sections.map((section, index) => {
         const headingId = `home-section-${index}-${section.id.split('/').pop()}`;
         return (
@@ -45,7 +54,7 @@ export function HomepageSections({
             key={`${section.id}-${index}`}
             content={section}
             headingId={headingId}
-            first={index === 0}
+            first={index === 0 && !hasPageHeading}
             configuratorProducts={configuratorProducts}
           />
         );
@@ -113,7 +122,13 @@ function HomeSection({
           </div>
           <div className="recommended-products-grid">
             {content.products.map((product) => (
-              <ProductItem key={product.id} product={product} loading="lazy" />
+              <ProductItem
+                key={product.id}
+                product={product}
+                loading="lazy"
+                headingAs="h3"
+                sizes="(min-width: 72em) 240px, (min-width: 45em) calc((100vw - 11rem) / 4), calc((100vw - 6rem) / 2)"
+              />
             ))}
           </div>
         </section>

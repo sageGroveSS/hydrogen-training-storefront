@@ -71,12 +71,6 @@ function CartAside({cart}: {cart: PageLayoutProps['cart']}) {
 
 function SearchAside() {
   const queriesDatalistId = useId();
-  const quickLinks = [
-    ['Sofas', '/search?q=sofa'],
-    ['Storage', '/collections/all?filter.p.product_type=Storage'],
-    ['Tables', '/collections/all?filter.p.product_type=Tables'],
-    ['Textiles', '/collections/all?filter.p.product_type=Textiles'],
-  ] as const;
 
   return (
     <Aside type="search" heading="Search">
@@ -114,21 +108,7 @@ function SearchAside() {
             }
 
             if (!total) {
-              return (
-                <>
-                  <SearchResultsPredictive.Empty term={term} />
-                  <div className="predictive-search-suggestions">
-                    <p className="section-kicker">Popular paths</p>
-                    <div>
-                      {quickLinks.map(([label, to]) => (
-                        <Link key={label} onClick={closeSearch} to={to}>
-                          {label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              );
+              return <SearchResultsPredictive.Empty term={term} />;
             }
 
             return (

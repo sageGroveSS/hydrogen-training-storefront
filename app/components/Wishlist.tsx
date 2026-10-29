@@ -210,7 +210,11 @@ export function WishlistButton({
     <button
       type="button"
       className={`wishlist-button${compact ? ' wishlist-button-compact' : ''}`}
-      aria-label={`${saved ? 'Remove' : 'Save'} ${title}${saved ? ' from' : ' to'} wishlist`}
+      aria-label={
+        compact
+          ? `${saved ? 'Remove from wishlist' : 'Save to wishlist'}: ${title}`
+          : `${saved ? 'Saved to wishlist' : 'Save to wishlist'}: ${title}${saved ? '. Remove from wishlist' : ''}`
+      }
       aria-pressed={saved}
       disabled={!ready || pending}
       onClick={() => toggle(id)}

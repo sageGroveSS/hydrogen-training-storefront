@@ -11,8 +11,7 @@ import {useAside} from './Aside';
 type SearchFormPredictiveChildren = (args: {
   fetchResults: (
     event:
-      | React.ChangeEvent<HTMLInputElement>
-      | React.FocusEvent<HTMLInputElement>,
+      React.ChangeEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>,
   ) => void;
   goToSearch: () => void;
   inputRef: React.MutableRefObject<HTMLInputElement | null>;
@@ -38,27 +37,24 @@ export function SearchFormPredictive({
   const navigate = useNavigate();
   const aside = useAside();
 
-  /** Reset the input value and blur the input */
-  function resetInput(event: React.FormEvent<HTMLFormElement>) {
+  function submitSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     event.stopPropagation();
-    if (inputRef?.current?.value) {
-      inputRef.current.blur();
-    }
+    goToSearch();
   }
 
   /** Navigate to the search page with the current input value */
   function goToSearch() {
     const term = inputRef?.current?.value;
-    void navigate(SEARCH_ENDPOINT + (term ? `?q=${term}` : ''));
+    const query = term ? `?${new URLSearchParams({q: term})}` : '';
+    void navigate(SEARCH_ENDPOINT + query);
     aside.close();
   }
 
   /** Fetch search results based on the input value */
   function fetchResults(
     event:
-      | React.ChangeEvent<HTMLInputElement>
-      | React.FocusEvent<HTMLInputElement>,
+      React.ChangeEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>,
   ) {
     void fetcher.submit(
       {q: event.target.value || '', limit: 5, predictive: true},
@@ -77,7 +73,7 @@ export function SearchFormPredictive({
   }
 
   return (
-    <fetcher.Form {...props} className={className} onSubmit={resetInput}>
+    <fetcher.Form {...props} className={className} onSubmit={submitSearch}>
       {children({inputRef, fetcher, fetchResults, goToSearch})}
     </fetcher.Form>
   );
