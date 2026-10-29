@@ -162,6 +162,10 @@ export function ProductConfigurator({
           View product details →
         </Link>
         <noscript>
+          <style>{`
+            .configurator-controls fieldset,
+            .configurator-controls form { display: none; }
+          `}</style>
           <p>
             Choose your options on{' '}
             <a href={`/products/${product.handle}`}>{product.title}</a>.
