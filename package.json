@@ -23,7 +23,8 @@
     "check:wishlist": "node --experimental-strip-types scripts/check-wishlist.mjs",
     "check:account": "node --experimental-strip-types scripts/check-account.mjs",
     "check:content": "node --experimental-strip-types scripts/check-content.mjs",
-    "check:storefront": "node scripts/check-storefront.mjs"
+    "check:storefront": "node scripts/check-storefront.mjs",
+    "check:images": "node --experimental-strip-types scripts/check-images.mjs"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {

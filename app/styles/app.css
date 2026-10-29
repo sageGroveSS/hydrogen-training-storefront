@@ -1102,14 +1102,12 @@ button.reset:hover:not(:has(> *)) {
 }
 
 .home-hero-media img {
-  animation: heroFade 700ms ease-out both;
   height: 100%;
   object-fit: cover;
   width: 100%;
 }
 
 .home-hero-copy {
-  animation: revealUp 760ms ease-out 120ms both;
   color: white;
   max-width: 48rem;
   padding: 3rem 1rem;
@@ -1505,15 +1503,6 @@ button.reset:hover:not(:has(> *)) {
   }
 }
 
-@keyframes heroFade {
-  from {
-    opacity: 0.86;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 [data-reveal] {
   transition: opacity 600ms ease-out, translate 600ms ease-out;
 }
@@ -1541,17 +1530,6 @@ button.reset:hover:not(:has(> *)) {
   to {
     opacity: 1;
     translate: 0 0;
-  }
-}
-
-@keyframes revealUp {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

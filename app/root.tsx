@@ -13,9 +13,8 @@ import {
 import type {Route} from './+types/root';
 import favicon from '~/assets/favicon.svg';
 import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
-import resetStyles from '~/styles/reset.css?url';
-import appStyles from '~/styles/app.css?url';
-import tailwindCss from './styles/tailwind.css?url';
+import appStyles from '~/styles/root.css?url';
+import {isbot} from 'isbot';
 import {PageLayout} from './components/PageLayout';
 import {WishlistProvider} from './components/Wishlist';
 
@@ -44,7 +43,7 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
 };
 
 /**
- * The main and reset stylesheets are added in the Layout component
+ * The root stylesheet is added in the Layout component
  * to prevent a bug in development HMR updates.
  *
  * This avoids the "failed to execute 'insertBefore' on 'Node'" error
@@ -58,10 +57,6 @@ export function links() {
     {
       rel: 'preconnect',
       href: 'https://cdn.shopify.com',
-    },
-    {
-      rel: 'preconnect',
-      href: 'https://shop.app',
     },
     {rel: 'icon', type: 'image/svg+xml', href: favicon},
   ];
@@ -79,6 +74,7 @@ export async function loader(args: Route.LoaderArgs) {
   return {
     ...deferredData,
     ...criticalData,
+    isBot: isbot(args.request.headers.get('user-agent')),
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
     shop: getShopAnalytics({
       storefront,
@@ -151,8 +147,6 @@ export function Layout({children}: {children?: React.ReactNode}) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <link rel="stylesheet" href={tailwindCss}></link>
-        <link rel="stylesheet" href={resetStyles}></link>
         <link rel="stylesheet" href={appStyles}></link>
         <Meta />
         <Links />
@@ -178,6 +172,7 @@ export default function App() {
       cart={data.cart}
       shop={data.shop}
       consent={data.consent}
+      canTrack={data.isBot ? () => false : undefined}
     >
       <WishlistProvider isLoggedIn={data.isLoggedIn}>
         <PageLayout {...data}>
