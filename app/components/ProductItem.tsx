@@ -5,6 +5,7 @@ import type {
   CollectionItemFragment,
   HomeProductFragment,
 } from 'storefrontapi.generated';
+import {optimizedImageUrl} from '~/lib/images';
 import {useVariantUrl} from '~/lib/variants';
 import {WishlistButton} from '~/components/Wishlist';
 
@@ -33,7 +34,7 @@ export function ProductItem({
           <Image
             alt={image.altText || product.title}
             aspectRatio="1/1"
-            data={image}
+            data={{...image, url: optimizedImageUrl(image.url)}}
             loading={loading ?? 'lazy'}
             fetchPriority={loading === 'eager' ? 'high' : 'auto'}
             sizes={sizes}

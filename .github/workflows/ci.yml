@@ -41,7 +41,7 @@ jobs:
         run: npm run check:collection-filters
 
       - name: Check content sections
-        run: npm run check:homepage && npm run check:content
+        run: npm run check:homepage && npm run check:content && npm run check:images
 
       - name: Check reviews
         run: npm run check:reviews
