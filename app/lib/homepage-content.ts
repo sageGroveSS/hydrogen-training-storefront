@@ -1,7 +1,7 @@
 import type {
   HomeProductFragment,
   HomeSectionFragment,
-  HomepageContentQuery,
+  SectionContentFragment,
 } from 'storefrontapi.generated';
 
 export type ContentImage = {
@@ -104,7 +104,7 @@ const kinds: Record<string, SectionKind> = {
 };
 
 export function parseHomepage(
-  homepage: HomepageContentQuery['homepage'],
+  homepage: SectionContentFragment | null | undefined,
 ): HomepageContent | null {
   if (!homepage) return null;
   const sections: HomepageSection[] = [];

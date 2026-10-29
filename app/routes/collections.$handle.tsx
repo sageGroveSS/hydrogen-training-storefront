@@ -111,7 +111,8 @@ export default function Collection() {
             <ProductItem
               key={product.id}
               product={product}
-              loading={index < 8 ? 'eager' : undefined}
+              loading={index === 0 ? 'eager' : 'lazy'}
+              sizes="(min-width: 80em) 300px, (min-width: 64em) calc((100vw - 25.5rem) / 2), calc((100vw - 5.25rem) / 2)"
             />
           )}
         </PaginatedResourceSection>

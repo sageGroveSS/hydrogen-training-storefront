@@ -140,6 +140,32 @@ The all-products catalog uses Shopify search and supports featured and price sor
 Run `npm run check:collection-filters` for the
 filter URL and validation checks.
 
+## Content pages with sections
+
+The homepage and `/pages/:handle` share the same section renderer, parser and
+configurator loader. For a content page, create a published Shopify Page and an
+active `storefront_home` metaobject whose handle matches the Page handle. The
+existing definition supplies `name`, `seo_title`, `seo_description` and the ordered
+`sections` reference list; no new definitions or migrations are needed.
+
+Sections reference the existing hero, editorial, parallax, configurator,
+composition, timeline and lookbook entries. Entries can be shared between pages,
+and each page controls their order. Changes to a shared entry affect all its pages.
+Without a valid section set, the route renders the Page's normal HTML body.
+A metaobject alone does not create a route: a missing Shopify Page returns 404.
+Page SEO values take precedence over section-set SEO values. The Page title is
+the only H1, including when its first section is a hero.
+
+`/pages/spaces-for-living` demonstrates six existing sections in the linked store.
+This route uses the section layout after deploying this change. Until then the
+published Page displays its introductory text. Edit the metaobject through
+Shopify Content, rather than rerunning the homepage seed.
+
+Run `npm run check:homepage` and `npm run check:content` for parsing, ordering,
+configurator deduplication and failure fallbacks. Public Storefront content uses
+a short query cache (60 seconds with 300 seconds stale-while-revalidate); this
+does not enable shared caching of the complete HTML document or customer data.
+
 ## GitHub release settings
 
 Pull requests run CI and deploy an Oxygen preview. Production deploys run from
@@ -160,3 +186,20 @@ branch: those commits will not reach `main`.
 ## Setup for using Customer Account API (`/account` section)
 
 Follow step 1 and 2 of <https://shopify.dev/docs/custom-storefronts/building-with-the-customer-account-api/hydrogen#step-1-set-up-a-public-domain-for-local-development>
+
+## Acceptance checks
+
+After starting a local server or deploying to the public production domain, run
+`npm run check:storefront -- http://localhost:3003` (replace the URL for deployment).
+This read-only HTTP smoke test checks canonical URLs, private cart/API error headers,
+the sitemap index and actual product/page/collection links. It uses the seeded Luna
+product and Spaces for living page as acceptance fixtures.
+
+The technical `*.o2.myshopify.dev` host is not the public SEO acceptance domain:
+Oxygen overrides robots rules until a custom domain is assigned to public production.
+The application sitemap responds locally; repeat its availability and indexing checks
+on that public domain. Do not bypass the platform's preview indexing protection.
+
+Browser and Lighthouse findings, along with their limits, are recorded in `docs/qa`.
+Lighthouse against a local production build diagnoses image delivery and rendering;
+its scores are not directly comparable to Oxygen network timings or field CWV.

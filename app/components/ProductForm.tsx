@@ -28,8 +28,8 @@ export function ProductForm({
         if (option.optionValues.length === 1) return null;
 
         return (
-          <div className="product-options" key={option.name}>
-            <h5>{option.name}</h5>
+          <fieldset className="product-options" key={option.name}>
+            <legend>{option.name}</legend>
             <div className="product-options-grid">
               {option.optionValues.map((value) => {
                 const {
@@ -111,7 +111,7 @@ export function ProductForm({
               })}
             </div>
             <br />
-          </div>
+          </fieldset>
         );
       })}
       <AddToCartButton

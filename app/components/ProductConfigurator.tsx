@@ -86,7 +86,14 @@ export function ProductConfigurator({
             className="configurator-photo"
             to={`/products/${product.handle}?${query}`}
           >
-            <Image data={image} sizes="180px" width={180} loading="lazy" />
+            {/* Hydrogen restores source alt text unless it is cleared too. */}
+            <Image
+              data={{...image, altText: ''}}
+              alt=""
+              sizes="180px"
+              width={180}
+              loading="lazy"
+            />
             <span>{product.title}</span>
           </Link>
         )}

@@ -40,6 +40,9 @@ jobs:
       - name: Check collection filters
         run: npm run check:collection-filters
 
+      - name: Check content sections
+        run: npm run check:homepage && npm run check:content
+
       - name: Check reviews
         run: npm run check:reviews
 

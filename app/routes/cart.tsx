@@ -1,14 +1,15 @@
-import {useLoaderData, data, type HeadersFunction} from 'react-router';
+import {useLoaderData, data} from 'react-router';
 import type {Route} from './+types/cart';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
+import {accountHeaders, ACCOUNT_PRIVATE_HEADERS} from '~/lib/account';
 import {CartMain} from '~/components/CartMain';
 
 export const meta: Route.MetaFunction = () => {
   return [{title: `Hydrogen | Cart`}];
 };
 
-export const headers: HeadersFunction = ({actionHeaders}) => actionHeaders;
+export const headers = accountHeaders;
 
 export async function action({request, context}: Route.ActionArgs) {
   const {cart} = context;
@@ -75,6 +76,7 @@ export async function action({request, context}: Route.ActionArgs) {
 
   const cartId = result?.cart?.id;
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
+  headers.set('Cache-Control', 'private, no-store');
   const {cart: cartResult, errors, warnings} = result;
 
   const redirectTo = formData.get('redirectTo') ?? null;
@@ -98,7 +100,7 @@ export async function action({request, context}: Route.ActionArgs) {
 
 export async function loader({context}: Route.LoaderArgs) {
   const {cart} = context;
-  return await cart.get();
+  return data(await cart.get(), {headers: ACCOUNT_PRIVATE_HEADERS});
 }
 
 export default function Cart() {

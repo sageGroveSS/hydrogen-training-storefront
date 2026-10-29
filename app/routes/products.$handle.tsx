@@ -30,8 +30,9 @@ export const meta: Route.MetaFunction = ({data}) => {
       content: data?.product.seo.description ?? data?.product.description,
     },
     {
+      tagName: 'link',
       rel: 'canonical',
-      href: `/products/${data?.product.handle}`,
+      href: data?.canonicalUrl,
     },
   ];
 };
@@ -43,7 +44,14 @@ export async function loader(args: Route.LoaderArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return {...deferredData, ...criticalData};
+  return {
+    ...deferredData,
+    ...criticalData,
+    canonicalUrl: new URL(
+      `/products/${criticalData.product.handle}`,
+      args.request.url,
+    ).href,
+  };
 }
 
 export const headers: Route.HeadersFunction = ({actionHeaders}) => {

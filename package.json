@@ -21,7 +21,9 @@
     "check:collection-filters": "node --experimental-strip-types scripts/check-collection-filters.mjs",
     "check:reviews": "node --experimental-strip-types scripts/check-reviews.mjs",
     "check:wishlist": "node --experimental-strip-types scripts/check-wishlist.mjs",
-    "check:account": "node --experimental-strip-types scripts/check-account.mjs"
+    "check:account": "node --experimental-strip-types scripts/check-account.mjs",
+    "check:content": "node --experimental-strip-types scripts/check-content.mjs",
+    "check:storefront": "node scripts/check-storefront.mjs"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {

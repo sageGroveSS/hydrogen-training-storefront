@@ -88,7 +88,7 @@ export function CollectionFilters({
         >
           <div className="collection-sidebar-heading">
             <h2>Filters</h2>
-            <Link to={pathname}>Reset all</Link>
+            {active.length > 0 && <Link to={pathname}>Reset all</Link>}
           </div>
           <CollectionFilterForm filters={filters} sortOptions={sortOptions} />
         </aside>

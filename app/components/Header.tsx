@@ -56,7 +56,12 @@ export function HeaderMenu({
   const {close} = useAside();
 
   return (
-    <nav className={className} role="navigation">
+    <nav
+      className={className}
+      aria-label={
+        viewport === 'mobile' ? 'Mobile navigation' : 'Main navigation'
+      }
+    >
       {viewport === 'mobile' && (
         <NavLink
           end
@@ -100,7 +105,7 @@ function HeaderCtas({
   cart,
 }: Pick<HeaderProps, 'isLoggedIn' | 'cart'>) {
   return (
-    <nav className="header-ctas" role="navigation">
+    <nav className="header-ctas" aria-label="Account and shopping">
       <HeaderMenuMobileToggle />
       <NavLink className="header-icon-link" prefetch="intent" to="/account">
         <Suspense fallback="Sign in">
@@ -132,9 +137,16 @@ function HeaderMenuMobileToggle() {
 function SearchToggle() {
   const {open} = useAside();
   return (
-    <button className="header-icon-link reset" onClick={() => open('search')}>
+    <Link
+      className="header-icon-link reset"
+      to="/search"
+      onClick={(event) => {
+        event.preventDefault();
+        open('search');
+      }}
+    >
       Search
-    </button>
+    </Link>
   );
 }
 

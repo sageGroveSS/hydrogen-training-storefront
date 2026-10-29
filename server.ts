@@ -12,7 +12,10 @@ export default {
     env: Env,
     executionContext: ExecutionContext,
   ): Promise<Response> {
-    const accountRequest = isAccountPath(new URL(request.url).pathname);
+    const pathname = new URL(request.url).pathname;
+    const privateRequest =
+      isAccountPath(pathname) ||
+      /^\/(?:cart|api\/wishlist)(?:[/.]|$)/.test(pathname);
     try {
       const hydrogenContext = await createHydrogenRouterContext(
         request,
@@ -31,7 +34,7 @@ export default {
       });
 
       const response = await handleRequest(request);
-      if (accountRequest) {
+      if (privateRequest) {
         for (const [name, value] of Object.entries(ACCOUNT_PRIVATE_HEADERS))
           response.headers.set(name, value);
       }
@@ -43,7 +46,7 @@ export default {
         );
       }
 
-      if (response.status === 404 && !accountRequest) {
+      if (response.status === 404 && !privateRequest) {
         /**
          * Check for redirects only when there's a 404 from the app.
          * If the redirect doesn't exist, then `storefrontRedirect`
@@ -61,7 +64,7 @@ export default {
       console.error(error);
       return new Response('An unexpected error occurred', {
         status: 500,
-        headers: accountRequest ? ACCOUNT_PRIVATE_HEADERS : undefined,
+        headers: privateRequest ? ACCOUNT_PRIVATE_HEADERS : undefined,
       });
     }
   },

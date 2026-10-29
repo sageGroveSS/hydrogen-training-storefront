@@ -14,7 +14,10 @@ import type {
 } from 'storefrontapi.generated';
 
 export const meta: Route.MetaFunction = () => {
-  return [{title: `Hydrogen | Search`}];
+  return [
+    {title: `Hydrogen | Search`},
+    {name: 'robots', content: 'noindex,follow'},
+  ];
 };
 
 export async function loader({request, context}: Route.LoaderArgs) {
@@ -397,15 +400,14 @@ async function predictiveSearch({
     errors,
   }: PredictiveSearchQuery & {
     errors?: Array<{message: string}>;
-  } =
-    await storefront.query(PREDICTIVE_SEARCH_QUERY, {
-      variables: {
-        // customize search options as needed
-        limit,
-        limitScope: 'EACH',
-        term,
-      },
-    });
+  } = await storefront.query(PREDICTIVE_SEARCH_QUERY, {
+    variables: {
+      // customize search options as needed
+      limit,
+      limitScope: 'EACH',
+      term,
+    },
+  });
 
   if (errors) {
     throw new Error(

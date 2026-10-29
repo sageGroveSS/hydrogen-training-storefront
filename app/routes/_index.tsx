@@ -5,10 +5,8 @@ import {HomepageSections} from '~/components/HomepageSections';
 import {MockShopNotice} from '~/components/MockShopNotice';
 import {parseHomepage} from '~/lib/homepage-content';
 import {demoHomepage, DEMO_HOMEPAGE_QUERY} from '~/lib/homepage-demo';
-import {
-  HOMEPAGE_QUERY,
-  CONFIGURATOR_PRODUCTS_QUERY,
-} from '~/lib/homepage-query';
+import {HOMEPAGE_QUERY} from '~/lib/homepage-query';
+import {loadConfiguratorProducts} from '~/lib/content.server';
 import creativeStyles from '~/styles/creative.css?url';
 
 export const links: Route.LinksFunction = () => [
@@ -21,10 +19,12 @@ export const meta: Route.MetaFunction = ({data}) => [
     name: 'description',
     content: data?.page.description || 'Furniture systems for everyday living.',
   },
+  {tagName: 'link', rel: 'canonical', href: data?.canonicalUrl},
 ];
 
-export async function loader({context}: Route.LoaderArgs) {
+export async function loader({context, request}: Route.LoaderArgs) {
   const {storefront} = context;
+  const canonicalUrl = new URL('/', request.url).href;
   const cache = storefront.CacheShort({maxAge: 60, staleWhileRevalidate: 300});
   const result = await storefront
     .query(HOMEPAGE_QUERY, {cache})
@@ -34,31 +34,9 @@ export async function loader({context}: Route.LoaderArgs) {
     });
   const page = parseHomepage(result?.homepage ?? null);
   if (page) {
-    const ids = [
-      ...new Set(
-        page.sections.flatMap((section) =>
-          section.kind === 'configurator' && section.product
-            ? [section.product.id]
-            : [],
-        ),
-      ),
-    ];
-    const configuratorProducts: Promise<ConfiguratorProductsQuery | null> =
-      ids.length
-        ? storefront
-            .query(CONFIGURATOR_PRODUCTS_QUERY, {
-              variables: {ids},
-              cache: storefront.CacheShort(),
-            })
-            .catch((error: unknown): null => {
-              console.error(
-                'Homepage configurator products unavailable:',
-                error,
-              );
-              return null;
-            })
-        : Promise.resolve(null);
+    const configuratorProducts = loadConfiguratorProducts(storefront, page);
     return {
+      canonicalUrl,
       page,
       configuratorProducts,
       contentSource: 'metaobject' as const,
@@ -71,6 +49,7 @@ export async function loader({context}: Route.LoaderArgs) {
     'Homepage uses demo content: publish storefront_home/home to switch to Shopify content.',
   );
   return {
+    canonicalUrl,
     page: demoHomepage(demo),
     configuratorProducts: Promise.resolve<ConfiguratorProductsQuery>({
       nodes: demo.sofa ? [{__typename: 'Product', ...demo.sofa}] : [],
